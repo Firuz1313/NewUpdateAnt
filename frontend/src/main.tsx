@@ -32,6 +32,8 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnReconnect: "always",
       refetchInterval: false,
+      // Work offline-first so cached data renders instantly
+      networkMode: "offlineFirst",
       // 🔧 FIX: Reduce retry attempts to prevent retry loops
       retry: (failureCount, error) => {
         // Don't retry on 4xx errors except 408 (timeout) and 429 (rate limit)
@@ -65,6 +67,7 @@ const queryClient = new QueryClient({
     },
     mutations: {
       retry: false, // 🔧 FIX: Disable mutation retries to prevent loops
+      networkMode: "offlineFirst",
     },
   },
 });
