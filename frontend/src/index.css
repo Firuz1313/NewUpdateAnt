@@ -1,0 +1,213 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+@import url("https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * ANT Support theme
+   * Optimized for dark theme with blue accent colors
+   * HSL values are used to maintain compatibility with Tailwind CSS
+   */
+  :root {
+    /* ANT Support Light Theme (Secondary) */
+    --background: 0 0% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 215 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 15% 90%;
+    --secondary-foreground: 215 25% 15%;
+
+    --muted: 215 15% 95%;
+    --muted-foreground: 215 10% 40%;
+
+    --accent: 215 15% 90%;
+    --accent-foreground: 215 25% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 15% 88%;
+    --input: 215 15% 88%;
+    --ring: 215 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* ANT Support Brand Colors */
+    --ant-blue: 215 100% 50%;
+    --ant-blue-light: 215 100% 70%;
+    --ant-blue-dark: 215 100% 35%;
+    --ant-success: 120 100% 40%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* ANT Support Dark Theme (Primary) */
+    --background: 222 47% 4%;
+    --foreground: 215 20% 95%;
+
+    --card: 222 47% 6%;
+    --card-foreground: 215 20% 95%;
+
+    --popover: 222 47% 6%;
+    --popover-foreground: 215 20% 95%;
+
+    --primary: 215 100% 60%;
+    --primary-foreground: 222 47% 4%;
+
+    --secondary: 215 25% 12%;
+    --secondary-foreground: 215 20% 85%;
+
+    --muted: 215 25% 10%;
+    --muted-foreground: 215 10% 60%;
+
+    --accent: 215 25% 12%;
+    --accent-foreground: 215 20% 85%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 25% 15%;
+    --input: 215 25% 15%;
+    --ring: 215 100% 60%;
+
+    /* ANT Support Dark Brand Colors */
+    --ant-blue: 215 100% 60%;
+    --ant-blue-light: 215 100% 75%;
+    --ant-blue-dark: 215 100% 45%;
+    --ant-success: 120 100% 50%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/70;
+  }
+}
+
+@layer components {
+  .ant-gradient {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3386ff 100%);
+  }
+
+  .glass {
+    backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .glow-effect {
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+  }
+
+  .device-card {
+    @apply glass rounded-xl p-6 transition-all duration-300 hover:scale-105 hover:glow-effect;
+  }
+
+  .nav-button {
+    @apply relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg transform hover:-translate-y-1;
+  }
+}
+
+@layer utilities {
+  @keyframes tap-bounce {
+    0%,
+    60%,
+    100% {
+      transform: translate3d(0, 0, 0) rotate(-28deg) scale(1);
+    }
+    20% {
+      transform: translate3d(-1px, -2px, 0) rotate(-28deg) scale(0.98);
+    }
+    40% {
+      transform: translate3d(0, 0, 0) rotate(-28deg) scale(1.02);
+    }
+  }
+  .animate-tap-bounce {
+    animation: tap-bounce 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  @keyframes tap-ripple {
+    0% {
+      transform: translate(-50%, -50%) scale(0.6);
+      opacity: 0.9;
+    }
+    70% {
+      transform: translate(-50%, -50%) scale(2.2);
+      opacity: 0;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(2.5);
+      opacity: 0;
+    }
+  }
+  .animate-tap-ripple {
+    animation: tap-ripple 1.6s ease-out infinite;
+  }
+  .animate-tap-ripple-delayed {
+    animation: tap-ripple 1.6s ease-out infinite 0.4s;
+  }
+}

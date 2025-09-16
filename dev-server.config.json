@@ -1,0 +1,38 @@
+{
+  "name": "ANT Support - FullStack Project",
+  "description": "Конфигурация для dev сервера ANT Support",
+  "settings": {
+    "proxy_port": 8081,
+    "comment": "Всегда должен указывать на фронтенд (8081), а не на бэкенд (3000)"
+  },
+  "servers": {
+    "frontend": {
+      "port": 8081,
+      "description": "React + Vite приложение",
+      "url": "http://localhost:8081/"
+    },
+    "backend": {
+      "port": 3000,
+      "description": "Express API сервер",
+      "url": "http://localhost:3000/api/v1"
+    }
+  },
+  "troubleshooting": {
+    "ERR_BLOCKED_BY_RESPONSE": {
+      "problem": "Прокси указывает на бэкенд вместо фронтенда",
+      "solution": "Установить proxy_port на 8081",
+      "command": "DevServerControl.set_proxy_port(8081)"
+    },
+    "404_errors": {
+      "problem": "Показывает 404 ошибки от Express сервера",
+      "solution": "Переключить прокси на фронтенд",
+      "note": "Бэкенд не обслуживает React маршруты"
+    }
+  },
+  "setup_instructions": {
+    "step1": "Запустить: npm run dev (запускает и фронтенд и бэкенд)",
+    "step2": "Установить proxy_port на 8081 для показа фронтенда",
+    "step3": "Проверить что фронтенд доступен на http://localhost:8081/",
+    "step4": "API доступен на http://localhost:3000/api/v1"
+  }
+}
