@@ -168,7 +168,7 @@ class Problem extends BaseModel {
   async search(searchTerm, options = {}) {
     try {
       const sql = `
-        SELECT 
+        SELECT
           p.*,
           d.name as device_name,
           d.brand as device_brand,
@@ -176,14 +176,14 @@ class Problem extends BaseModel {
           d.color as device_color,
           COUNT(DISTINCT ds.id) as steps_count,
           ts_rank(
-            to_tsvector('russian', p.title || ' ' || COALESCE(p.description, '')), 
+            to_tsvector('russian', COALESCE(p.title,'') || ' ' || COALESCE(p.description,'') || ' ' || COALESCE(d.name,'') || ' ' || COALESCE(d.brand,'') || ' ' || COALESCE(d.model,'')),
             plainto_tsquery('russian', $1)
           ) as rank
         FROM problems p
         LEFT JOIN devices d ON p.device_id = d.id
         LEFT JOIN diagnostic_steps ds ON p.id = ds.problem_id AND ds.is_active = true
         WHERE p.is_active = true
-          AND to_tsvector('russian', p.title || ' ' || COALESCE(p.description, ''))
+          AND to_tsvector('russian', COALESCE(p.title,'') || ' ' || COALESCE(p.description,'') || ' ' || COALESCE(d.name,'') || ' ' || COALESCE(d.brand,'') || ' ' || COALESCE(d.model,''))
               @@ plainto_tsquery('russian', $1)
         GROUP BY p.id, d.name, d.brand, d.model, d.color
         ORDER BY rank DESC, p.priority DESC

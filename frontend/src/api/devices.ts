@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { getCache, setCache, invalidateCache, buildKey } from "./cache";
 import {
   Device,
   APIResponse,
@@ -49,131 +50,205 @@ export class DevicesApi {
   private readonly basePath = "/devices";
 
   /**
-   * Получение списка устройств
+   * Получение списка устройств (с кэшированием)
    */
   async getDevices(
     page: number = 1,
     limit: number = 20,
     filters: DeviceFilters = {},
   ): Promise<PaginatedResponse<Device>> {
-    return apiClient.get<PaginatedResponse<Device>>(this.basePath, {
+    const key = buildKey("devices:get", { page, limit, filters });
+    const cached = getCache<PaginatedResponse<Device>>(key);
+    if (cached) return cached;
+
+    const res = await apiClient.get<PaginatedResponse<Device>>(this.basePath, {
       params: {
         page,
         limit,
         ...filters,
       },
     });
+    setCache(key, res);
+    return res;
   }
 
   /**
-   * Получение устройства по ID
+   * Получение устройства по ID (с кэшированием)
    */
   async getDevice(
     id: string,
     includeStats: boolean = false,
   ): Promise<APIResponse<Device>> {
-    return apiClient.get<APIResponse<Device>>(`${this.basePath}/${id}`, {
-      params: { include_stats: includeStats },
-    });
+    const key = buildKey("devices:getById", { id, includeStats });
+    const cached = getCache<APIResponse<Device>>(key);
+    if (cached) return cached;
+
+    const res = await apiClient.get<APIResponse<Device>>(
+      `${this.basePath}/${id}`,
+      {
+        params: { include_stats: includeStats },
+      },
+    );
+    setCache(key, res);
+    return res;
   }
 
   /**
-   * Создание нового устройства
+   * Создание нового устройства (инвалидирует кэш)
    */
   async createDevice(data: DeviceCreateData): Promise<APIResponse<Device>> {
-    return apiClient.post<APIResponse<Device>>(this.basePath, data);
+    const res = await apiClient.post<APIResponse<Device>>(this.basePath, data);
+    invalidateCache("devices:");
+    return res;
   }
 
   /**
-   * Обновление устройства
+   * Обновление устройства (инвалидирует кэш)
    */
   async updateDevice(
     id: string,
     data: DeviceUpdateData,
   ): Promise<APIResponse<Device>> {
-    return apiClient.put<APIResponse<Device>>(`${this.basePath}/${id}`, data);
+    const res = await apiClient.put<APIResponse<Device>>(
+      `${this.basePath}/${id}`,
+      data,
+    );
+    invalidateCache("devices:");
+    return res;
   }
 
   /**
-   * Удаление устройства
+   * Удаление устройства (инвалидирует кэш)
    */
   async deleteDevice(
     id: string,
     force: boolean = false,
   ): Promise<APIResponse<Device>> {
-    return apiClient.delete<APIResponse<Device>>(`${this.basePath}/${id}`, {
-      params: { force },
-    });
+    const res = await apiClient.delete<APIResponse<Device>>(
+      `${this.basePath}/${id}`,
+      {
+        params: { force },
+      },
+    );
+    invalidateCache("devices:");
+    return res;
   }
 
   /**
-   * Восстановление архивированного устройства
+   * Восстановление архивированного устройства (инвалидирует кэш)
    */
   async restoreDevice(id: string): Promise<APIResponse<Device>> {
-    return apiClient.post<APIResponse<Device>>(
+    const res = await apiClient.post<APIResponse<Device>>(
       `${this.basePath}/${id}/restore`,
     );
+    invalidateCache("devices:");
+    return res;
   }
 
   /**
-   * Поиск устройств
+   * Поиск устройств (с ��эшированием)
    */
   async searchDevices(
     query: string,
     limit: number = 20,
     offset: number = 0,
   ): Promise<APIResponse<Device[]>> {
-    return apiClient.get<APIResponse<Device[]>>(`${this.basePath}/search`, {
-      params: { q: query, limit, offset },
-    });
+    const key = buildKey("devices:search", { query, limit, offset });
+    const cached = getCache<APIResponse<Device[]>>(key, 2 * 60 * 1000);
+    if (cached) return cached;
+
+    const res = await apiClient.get<APIResponse<Device[]>>(
+      `${this.basePath}/search`,
+      {
+        params: { q: query, limit, offset },
+      },
+    );
+    setCache(key, res);
+    return res;
   }
 
   /**
-   * Получение популярных устройств
+   * Получение популярных устройств (с кэшированием)
    */
   async getPopularDevices(limit: number = 10): Promise<APIResponse<Device[]>> {
-    return apiClient.get<APIResponse<Device[]>>(`${this.basePath}/popular`, {
-      params: { limit },
-    });
+    const key = `devices:popular:${limit}`;
+    const cached = getCache<APIResponse<Device[]>>(key);
+    if (cached) return cached;
+
+    const res = await apiClient.get<APIResponse<Device[]>>(
+      `${this.basePath}/popular`,
+      {
+        params: { limit },
+      },
+    );
+    setCache(key, res);
+    return res;
   }
 
   /**
-   * Получение статистики устройств
+   * Получение статистики устройств (с кэшированием)
    */
   async getDeviceStats(): Promise<APIResponse<DeviceStats>> {
-    return apiClient.get<APIResponse<DeviceStats>>(`${this.basePath}/stats`);
+    const key = `devices:stats`;
+    const cached = getCache<APIResponse<DeviceStats>>(key);
+    if (cached) return cached;
+
+    const res = await apiClient.get<APIResponse<DeviceStats>>(
+      `${this.basePath}/stats`,
+    );
+    setCache(key, res);
+    return res;
   }
 
   /**
-   * Изменение порядка устройств
+   * Изменение порядка устройств (инвалидирует кэш)
    */
   async reorderDevices(deviceIds: string[]): Promise<APIResponse<Device[]>> {
-    return apiClient.put<APIResponse<Device[]>>(`${this.basePath}/reorder`, {
-      deviceIds,
-    });
+    const res = await apiClient.put<APIResponse<Device[]>>(
+      `${this.basePath}/reorder`,
+      {
+        deviceIds,
+      },
+    );
+    invalidateCache("devices:");
+    return res;
   }
 
   /**
-   * Массовое обновление устройств
+   * Массовое обновление устройств (инвалидирует кэш)
    */
   async bulkUpdateDevices(
     updates: BulkUpdateItem[],
   ): Promise<APIResponse<Device[]>> {
-    return apiClient.put<APIResponse<Device[]>>(`${this.basePath}/bulk`, {
-      updates,
-    });
+    const res = await apiClient.put<APIResponse<Device[]>>(
+      `${this.basePath}/bulk`,
+      {
+        updates,
+      },
+    );
+    invalidateCache("devices:");
+    return res;
   }
 
   /**
-   * Экспорт устройств
+   * Экспорт устройств (с кэшированием по параметрам)
    */
   async exportDevices(
     format: string = "json",
     includeProblems: boolean = false,
   ): Promise<APIResponse<Device[]>> {
-    return apiClient.get<APIResponse<Device[]>>(`${this.basePath}/export`, {
-      params: { format, include_problems: includeProblems },
-    });
+    const key = buildKey("devices:export", { format, includeProblems });
+    const cached = getCache<APIResponse<Device[]>>(key, 60 * 60 * 1000);
+    if (cached) return cached;
+
+    const res = await apiClient.get<APIResponse<Device[]>>(
+      `${this.basePath}/export`,
+      {
+        params: { format, include_problems: includeProblems },
+      },
+    );
+    setCache(key, res);
+    return res;
   }
 }
 

@@ -371,6 +371,18 @@ export class ApiClient {
       }
 
       console.log(`✅ API call successful`);
+      // Persist successful GET responses for offline usage
+      try {
+        const methodUsed = (options.method || "GET").toUpperCase();
+        if (methodUsed === "GET") {
+          const cacheKey = `ant_fetch_cache:${url}`;
+          const payload = { ts: Date.now(), data: responseData };
+          const serialized = JSON.stringify(payload);
+          if (serialized.length <= 4 * 1024 * 1024) {
+            localStorage.setItem(cacheKey, serialized);
+          }
+        }
+      } catch {}
       return responseData;
     } catch (error) {
       clearTimeout(timeoutId);
@@ -479,6 +491,24 @@ export class ApiClient {
             : isFullStoryPresent
               ? "Network request failed due to fetch API interference after 3 retries. Switching to fallback mode."
               : "Network connection failed after 3 retries - this may be due to database connectivity issues. Please try again in a moment.";
+
+          // Final network failure - try offline cache for GET
+          try {
+            const methodUsed = (options.method || "GET").toUpperCase();
+            if (methodUsed === "GET") {
+              const cacheKey = `ant_fetch_cache:${url}`;
+              const raw = localStorage.getItem(cacheKey);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                // 7 days TTL for offline
+                const sevenDays = 7 * 24 * 60 * 60 * 1000;
+                if (Date.now() - parsed.ts < sevenDays) {
+                  console.warn("📦 Using offline cached response for:", url);
+                  return parsed.data as T;
+                }
+              }
+            }
+          } catch {}
 
           throw new ApiError(errorMessage, 0);
         }

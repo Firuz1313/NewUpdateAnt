@@ -117,7 +117,7 @@ const DeviceSelection = () => {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Поиск приставки (например, Openbox, U2C, мо��ель)"
+                placeholder="Поиск приставки (например, Openbox, U2C, модель)"
                 className="pl-10 h-12 rounded-2xl border-gray-200 bg-white shadow-sm focus-visible:ring-2"
               />
             </div>
