@@ -89,7 +89,7 @@ pool.on("release", (client) => {
 
 // PostgreSQL only configuration
 
-// Функция проверки подключения к базе данных
+// Фу��кция проверки подключения к базе данных
 export async function testConnection() {
   let client;
   try {
@@ -244,116 +244,68 @@ export async function runMigrations() {
       executedResult.rows.map((row) => row.filename),
     );
 
-    // Чит��ем файлы миграций
+    // Читаем файлы миграций
     const migrationsDir = path.join(__dirname, "../../migrations");
     const migrationFiles = fs
       .readdirSync(migrationsDir)
       .filter((file) => file.endsWith(".sql"))
       .sort();
 
-    console.log(`📁 Найден�� ${migrationFiles.length} файлов миграций`);
+    console.log(`📁 Найдено ${migrationFiles.length} файлов миграций`);
 
     for (const filename of migrationFiles) {
       if (executedMigrations.has(filename)) {
-        console.log(`⏭️  Миграция ${filename} ��же выполне��а, пропускае��`);
+        console.log(`⏭️  Миграция ${filename} уже выполнена, пропускаем`);
         continue;
       }
 
-      console.log(`🔄 Выполнение миграции: ${filename}`);
+      console.log(`🔄 Выполнение миграц��и: ${filename}`);
 
       const migrationPath = path.join(migrationsDir, filename);
       const migrationSQL = fs.readFileSync(migrationPath, "utf8");
 
       try {
+        // Попытка выполнить всю миграцию разом
         try {
-        await transaction(async (client) => {
-          // Try to execute full migration first
-          try {
-            await client.query(migrationSQL);
-          } catch (fullErr) {
-            console.warn(`⚠️ Полный запуск миграции ${filename} завершился с ошибкой, пытаемся по-частям: ${fullErr.message}`);
+          await query(migrationSQL);
+        } catch (fullErr) {
+          console.warn(`⚠️ Полный запуск миграции ${filename} завершился с ошибкой, пытаемся по-частям: ${fullErr.message}`);
 
-            // Fallback: split into statements and run one by one to allow idempotent/apply-if-exists behavior
-            const statements = migrationSQL
-              .split(/;\s*\n/)
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
+          // Фоллбек: выполняем по отдельным выражениям
+          const statements = migrationSQL
+            .split(/;\s*\n/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
 
-            let spCounter = 0;
-            for (const stmt of statements) {
-              spCounter++;
-              const sp = `sp_${spCounter}`;
-              try {
-                await client.query(`SAVEPOINT ${sp}`);
-                await client.query(stmt);
-                await client.query(`RELEASE SAVEPOINT ${sp}`);
-              } catch (stmtErr) {
-                const msg = (stmtErr && stmtErr.message) || String(stmtErr);
-                // Rollback to savepoint to recover from error and continue
-                try {
-                  await client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
-                } catch (rbErr) {
-                  // ignore
-                }
-
-                // Ignore errors that indicate the object already exists or column missing for optional indexes
-                if (/already exists|duplicate key|relation .* already exists|column ".*" does not exist|index .* already exists/i.test(msg)) {
-                  console.warn(`ℹ️ Пропущено выражение из-за допустимой ошибки: ${msg}`);
-                  continue;
-                }
-
-                // For other errors, rethrow
-                console.error(`❌ Ошибка при выполнении выражения в миграции ${filename}:`, msg);
-                throw stmtErr;
+          for (const stmt of statements) {
+            try {
+              await query(stmt);
+            } catch (stmtErr) {
+              const msg = (stmtErr && stmtErr.message) || String(stmtErr);
+              // Игнорируем ожидаемые ошибки (уже существует, колонка отсутствует для необязательных индексов и т.д.)
+              if (/already exists|duplicate key|relation .* already exists|column ".*" does not exist|index .* already exists/i.test(msg)) {
+                console.warn(`ℹ️ Пропущено выражение из-за допустимой ошибки: ${msg}`);
+                continue;
               }
+
+              console.error(`❌ Ошибка при выполнении выражения в миграции ${filename}:`, msg);
+              throw stmtErr;
             }
           }
+        }
 
-          // Записываем в таблицу миграций
-          await client.query("INSERT INTO migrations (filename) VALUES ($1)", [
-            filename,
-          ]);
-        });
+        // Помечаем миграцию как выполненную
+        try {
+          await query("INSERT INTO migrations (filename) VALUES ($1)", [filename]);
+        } catch (insErr) {
+          if (!/duplicate key|already exists/i.test((insErr && insErr.message) || "")) {
+            throw insErr;
+          }
+        }
 
         console.log(`✅ Миграция ${filename} выполнена успешно`);
       } catch (migErr) {
-        // Если ошибка связана с тем, что объект уже существует — считаем миграцию idempotent и помечаем как выполненную
-        const msg = (migErr && migErr.message) || String(migErr);
-        const isAlreadyExists = /already exists|duplicate key|relation .* already exists|trigger .* already exists/i.test(msg);
-
-        if (isAlreadyExists) {
-          console.warn(`⚠️ Миграция ${filename} частично/полностью применена ранее: ${msg}`);
-          try {
-            await query("INSERT INTO migrations (filename) VALUES ($1)", [filename]);
-            console.log(`ℹ️ Пометил миграцию ${filename} как выполненную`);
-            continue;
-          } catch (markErr) {
-            console.error(`❌ Не удалось пометить миграцию ${filename} как выполненную:`, markErr.message);
-            throw migErr;
-          }
-        }
-
-        // Иначе пробрасываем ошибку дальше
-        throw migErr;
-      }
-      } catch (migErr) {
-        // Если ошибка связана с тем, что объект уже существует — считаем миграцию idempotent и помечаем как выполненную
-        const msg = (migErr && migErr.message) || String(migErr);
-        const isAlreadyExists = /already exists|duplicate key|relation .* already exists|trigger .* already exists/i.test(msg);
-
-        if (isAlreadyExists) {
-          console.warn(`⚠️ Миграция ${filename} частично/полностью применена ранее: ${msg}`);
-          try {
-            await query("INSERT INTO migrations (filename) VALUES ($1)", [filename]);
-            console.log(`ℹ️ Пометил миграцию ${filename} как выполненную`);
-            continue;
-          } catch (markErr) {
-            console.error(`❌ Не удалось пометить миграцию ${filename} как выполненную:`, markErr.message);
-            throw migErr;
-          }
-        }
-
-        // Иначе пробрасываем ошибку дальше
+        console.error(`❌ Ошибка выполнения миграции ${filename}:`, (migErr && migErr.message) || String(migErr));
         throw migErr;
       }
     }
