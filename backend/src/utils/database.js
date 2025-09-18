@@ -41,7 +41,7 @@ if (CONNECTION_STRING) {
     max: 50, // максимальное количество соединений в pool (увеличено с 20)
     min: 5, // минимальное количество соединений (увеличено с 2)
     idleTimeoutMillis: 60000, // время простоя перед закрытием соединения (увеличено)
-    connectionTimeoutMillis: 15000, // таймаут подключения (увеличено)
+    connectionTimeoutMillis: 15000, // таймаут п��дключения (увеличено)
     maxUses: 7500, // максимальное количество использований соединения
   };
 } else {
@@ -223,6 +223,123 @@ export async function createDatabase() {
 }
 
 // Функция выполнения миграций
+function splitSqlStatements(sql) {
+  const statements = [];
+  let cur = "";
+  let inSingle = false;
+  let inDouble = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+  let dollarTag = null;
+
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    const next = sql[i + 1] || "";
+
+    // handle line comments
+    if (inLineComment) {
+      cur += ch;
+      if (ch === "\n") inLineComment = false;
+      continue;
+    }
+
+    // handle block comments
+    if (inBlockComment) {
+      cur += ch;
+      if (ch === "*" && next === "/") {
+        cur += "/";
+        inBlockComment = false;
+        i++; // skip next
+      }
+      continue;
+    }
+
+    // handle dollar-quoted strings
+    if (dollarTag) {
+      cur += ch;
+      if (ch === "$" && sql.slice(i - dollarTag.length + 1, i + 1) === dollarTag) {
+        // close tag
+        dollarTag = null;
+      }
+      continue;
+    }
+
+    // detect start of dollar tag
+    if (ch === "$" && !inSingle && !inDouble) {
+      const m = sql.slice(i).match(/^\$[A-Za-z0-9_]*\$/);
+      if (m) {
+        dollarTag = m[0];
+        cur += m[0];
+        i += m[0].length - 1;
+        continue;
+      }
+    }
+
+    // handle quotes
+    if (inSingle) {
+      cur += ch;
+      if (ch === "'") inSingle = false;
+      if (ch === "\\") {
+        // escape next char
+        i++;
+        cur += sql[i] || "";
+      }
+      continue;
+    }
+
+    if (inDouble) {
+      cur += ch;
+      if (ch === '"') inDouble = false;
+      if (ch === "\\") {
+        i++;
+        cur += sql[i] || "";
+      }
+      continue;
+    }
+
+    // start quotes or comments
+    if (ch === "-" && next === "-") {
+      inLineComment = true;
+      cur += "--";
+      i++;
+      continue;
+    }
+
+    if (ch === "/" && next === "*") {
+      inBlockComment = true;
+      cur += "/*";
+      i++;
+      continue;
+    }
+
+    if (ch === "'") {
+      inSingle = true;
+      cur += ch;
+      continue;
+    }
+
+    if (ch === '"') {
+      inDouble = true;
+      cur += ch;
+      continue;
+    }
+
+    // split on semicolon when not inside any structure
+    if (ch === ";") {
+      // push statement including semicolon
+      const stmt = cur.trim();
+      if (stmt.length > 0) statements.push(stmt + ";");
+      cur = "";
+      continue;
+    }
+
+    cur += ch;
+  }
+
+  if (cur.trim().length > 0) statements.push(cur);
+  return statements;
+}
+
 export async function runMigrations() {
   try {
     console.log("🔄 Запуск миграций базы данных...");
@@ -596,7 +713,7 @@ export async function cleanupOldData(daysToKeep = 90) {
     );
 
     console.log(`✅ Удалено сессий: ${sessionsResult.rowCount}`);
-    console.log(`✅ Удалено логов: ${logsResult.rowCount}`);
+    console.log(`✅ Уд��лено логов: ${logsResult.rowCount}`);
 
     // О��новляем статистику
     await query("ANALYZE");
