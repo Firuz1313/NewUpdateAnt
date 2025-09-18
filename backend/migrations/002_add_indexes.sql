@@ -49,7 +49,11 @@ CREATE INDEX IF NOT EXISTS idx_problems_device_active ON problems(device_id, is_
 CREATE INDEX IF NOT EXISTS idx_diagnostic_steps_problem_number ON diagnostic_steps(problem_id, step_number);
 CREATE INDEX IF NOT EXISTS idx_diagnostic_steps_problem_active ON diagnostic_steps(problem_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_device_time ON diagnostic_sessions(device_id, start_time);
-CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_device_success ON diagnostic_sessions(device_id, success);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='diagnostic_sessions' AND column_name='success') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_device_success ON diagnostic_sessions(device_id, success)';
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_session_steps_session_number ON session_steps(session_id, step_number);
 CREATE INDEX IF NOT EXISTS idx_change_logs_entity_type_id ON change_logs(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_change_logs_user_time ON change_logs(user_id, created_at);
