@@ -55,7 +55,7 @@ if (CONNECTION_STRING) {
     ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
 
     // Настройки pool соединений (увеличены для TV interface операций)
-    max: 50, // максимальное количество соединений в pool (увеличено с 20)
+    max: 50, // максимальное количество соединений �� pool (увеличено с 20)
     min: 10, // минимальное количество соединений (увеличено с 5)
     idleTimeoutMillis: 60000, // время простоя перед закрытием соединения (увеличено)
     connectionTimeoutMillis: 15000, // таймаут подключения (увеличено)
@@ -399,10 +399,7 @@ export async function runMigrations() {
           console.warn(`⚠️ Полный запуск миграции ${filename} завершился с ошибкой, пытаемся по-частям: ${fullErr.message}`);
 
           // Фоллбек: выполняем по отдельным выражениям
-          const statements = migrationSQL
-            .split(/;\s*\n/)
-            .map((s) => s.trim())
-            .filter((s) => s.length > 0);
+          const statements = splitSqlStatements(migrationSQL).map((s) => s.trim()).filter((s) => s.length > 0);
 
           for (const stmt of statements) {
             try {
