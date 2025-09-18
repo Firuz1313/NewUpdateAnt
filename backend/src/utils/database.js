@@ -13,18 +13,29 @@ dotenv.config();
 
 const { Pool, Client } = pkg;
 
-// PostgreSQL connection configuration
+// Определяем строку подключения из популярных переменных окружения (Vercel/Neon)
+const CONNECTION_STRING =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.VERCEL_POSTGRES_URL ||
+  process.env.NEON_DATABASE_URL ||
+  "";
 
 // Конфигурация подключения к PostgreSQL
 let dbConfig;
 
-if (process.env.DATABASE_URL) {
-  // Use DATABASE_URL if provided (Neon/Heroku style)
+if (CONNECTION_STRING) {
+  // Use common connection string (Neon/Vercel/Heroku)
   dbConfig = {
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL.includes("neon.tech")
-      ? { rejectUnauthorized: false }
-      : false,
+    connectionString: CONNECTION_STRING,
+    ssl:
+      CONNECTION_STRING.includes("neon.tech") ||
+      CONNECTION_STRING.includes("sslmode=require") ||
+      process.env.DB_SSL === "true"
+        ? { rejectUnauthorized: false }
+        : false,
 
     // Настройки pool соединений (увеличены для TV interface операций)
     max: 50, // максимальное количество соединений в pool (увеличено с 20)
@@ -37,7 +48,7 @@ if (process.env.DATABASE_URL) {
   // Fallback to individual env vars
   dbConfig = {
     host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT) || 5432,
+    port: parseInt(process.env.DB_PORT || "5432", 10),
     database: process.env.DB_NAME || "ant_support",
     user: process.env.DB_USER || "postgres",
     password: process.env.DB_PASSWORD || "password",
@@ -99,7 +110,7 @@ export async function testConnection() {
       version: result.rows[0].postgres_version,
     };
   } catch (error) {
-    console.error("❌ Ошибка подключ��ния к PostgreSQL:", error.message);
+    console.error("❌ Ошибка подключения к PostgreSQL:", error.message);
 
     // PostgreSQL connection failed
     console.error("❌ Failed to connect to PostgreSQL database");
@@ -107,6 +118,7 @@ export async function testConnection() {
     return {
       success: false,
       error: error.message,
+      connectionStringUsed: CONNECTION_STRING ? "env-connection-string" : "host-params",
     };
   } finally {
     if (client) {
@@ -243,7 +255,7 @@ export async function runMigrations() {
 
     for (const filename of migrationFiles) {
       if (executedMigrations.has(filename)) {
-        console.log(`⏭️  Миграция ${filename} уже выполне��а, пропускае��`);
+        console.log(`⏭️  Миграция ${filename} ��же выполне��а, пропускае��`);
         continue;
       }
 
@@ -531,7 +543,7 @@ export async function cleanupOldData(daysToKeep = 90) {
       [cutoffDate],
     );
 
-    // Удаляем старые логи изменений
+    // Удаляем старые л��ги изменений
     const logsResult = await query(
       `
       DELETE FROM change_logs 
