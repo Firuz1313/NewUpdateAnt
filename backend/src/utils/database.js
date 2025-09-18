@@ -118,7 +118,9 @@ export async function testConnection() {
     return {
       success: false,
       error: error.message,
-      connectionStringUsed: CONNECTION_STRING ? "env-connection-string" : "host-params",
+      connectionStringUsed: CONNECTION_STRING
+        ? "env-connection-string"
+        : "host-params",
     };
   } finally {
     if (client) {
@@ -257,7 +259,10 @@ function splitSqlStatements(sql) {
     // handle dollar-quoted strings
     if (dollarTag) {
       cur += ch;
-      if (ch === "$" && sql.slice(i - dollarTag.length + 1, i + 1) === dollarTag) {
+      if (
+        ch === "$" &&
+        sql.slice(i - dollarTag.length + 1, i + 1) === dollarTag
+      ) {
         // close tag
         dollarTag = null;
       }
@@ -386,10 +391,14 @@ export async function runMigrations() {
         try {
           await query(migrationSQL);
         } catch (fullErr) {
-          console.warn(`⚠️ Полный запуск миграции ${filename} завершился с ошибкой, пытаемся по-частям: ${fullErr.message}`);
+          console.warn(
+            `⚠️ Полный запуск миграции ${filename} завершился с ошибкой, пытаемся по-частям: ${fullErr.message}`,
+          );
 
           // Фоллбек: выполняем по отдельным выражениям
-          const statements = splitSqlStatements(migrationSQL).map((s) => s.trim()).filter((s) => s.length > 0);
+          const statements = splitSqlStatements(migrationSQL)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
 
           for (const stmt of statements) {
             try {
@@ -397,12 +406,21 @@ export async function runMigrations() {
             } catch (stmtErr) {
               const msg = (stmtErr && stmtErr.message) || String(stmtErr);
               // Игнорируем ожидаемые ошибки (уже существует, колонка отсутствует для необязательных индексов и т.д.)
-              if (/already exists|duplicate key|relation .* already exists|column ".*" does not exist|index .* already exists/i.test(msg)) {
-                console.warn(`ℹ️ Пропущено выражение из-за допустимой ошибки: ${msg}`);
+              if (
+                /already exists|duplicate key|relation .* already exists|column ".*" does not exist|index .* already exists/i.test(
+                  msg,
+                )
+              ) {
+                console.warn(
+                  `ℹ️ Пропущено выражение из-за допустимой ошибки: ${msg}`,
+                );
                 continue;
               }
 
-              console.error(`❌ Ошибка при выполнении выражения в миграции ${filename}:`, msg);
+              console.error(
+                `❌ Ошибка при выполнении выражения в миграции ${filename}:`,
+                msg,
+              );
               throw stmtErr;
             }
           }
@@ -410,16 +428,25 @@ export async function runMigrations() {
 
         // Помечаем миграцию как выполненную
         try {
-          await query("INSERT INTO migrations (filename) VALUES ($1)", [filename]);
+          await query("INSERT INTO migrations (filename) VALUES ($1)", [
+            filename,
+          ]);
         } catch (insErr) {
-          if (!/duplicate key|already exists/i.test((insErr && insErr.message) || "")) {
+          if (
+            !/duplicate key|already exists/i.test(
+              (insErr && insErr.message) || "",
+            )
+          ) {
             throw insErr;
           }
         }
 
         console.log(`✅ Миграция ${filename} выполнена успешно`);
       } catch (migErr) {
-        console.error(`❌ Ошибка выполнения миграции ${filename}:`, (migErr && migErr.message) || String(migErr));
+        console.error(
+          `❌ Ошибка выполнения миграции ${filename}:`,
+          (migErr && migErr.message) || String(migErr),
+        );
         throw migErr;
       }
     }
