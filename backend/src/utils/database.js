@@ -244,14 +244,14 @@ export async function runMigrations() {
       executedResult.rows.map((row) => row.filename),
     );
 
-    // Читаем файлы миграций
+    // Чит��ем файлы миграций
     const migrationsDir = path.join(__dirname, "../../migrations");
     const migrationFiles = fs
       .readdirSync(migrationsDir)
       .filter((file) => file.endsWith(".sql"))
       .sort();
 
-    console.log(`📁 Найден��� ${migrationFiles.length} файлов миграций`);
+    console.log(`📁 Найден�� ${migrationFiles.length} файлов миграций`);
 
     for (const filename of migrationFiles) {
       if (executedMigrations.has(filename)) {
@@ -279,11 +279,23 @@ export async function runMigrations() {
               .map((s) => s.trim())
               .filter((s) => s.length > 0);
 
+            let spCounter = 0;
             for (const stmt of statements) {
+              spCounter++;
+              const sp = `sp_${spCounter}`;
               try {
+                await client.query(`SAVEPOINT ${sp}`);
                 await client.query(stmt);
+                await client.query(`RELEASE SAVEPOINT ${sp}`);
               } catch (stmtErr) {
                 const msg = (stmtErr && stmtErr.message) || String(stmtErr);
+                // Rollback to savepoint to recover from error and continue
+                try {
+                  await client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+                } catch (rbErr) {
+                  // ignore
+                }
+
                 // Ignore errors that indicate the object already exists or column missing for optional indexes
                 if (/already exists|duplicate key|relation .* already exists|column ".*" does not exist|index .* already exists/i.test(msg)) {
                   console.warn(`ℹ️ Пропущено выражение из-за допустимой ошибки: ${msg}`);
@@ -553,7 +565,7 @@ export async function fixDiagnosticSessionsSchema() {
   }
 }
 
-// Функция получения статистики базы данных
+// Фу��кция получения статистики базы данных
 export async function getDatabaseStats() {
   try {
     const stats = await query(`
