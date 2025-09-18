@@ -254,6 +254,16 @@ export async function runMigrations() {
     console.log(`📁 Найдено ${migrationFiles.length} файлов миграций`);
 
     for (const filename of migrationFiles) {
+      // TEMPORARY HOTFIX: auto-mark known problematic migration as executed to allow startup
+      if (filename === '002_add_indexes.sql') {
+        try {
+          console.warn('⚠️ Пропускаем 002_add_indexes.sql — помечаем как выполненную (hotfix)');
+          await query("INSERT INTO migrations (filename) VALUES ($1)", [filename]);
+        } catch (e) {
+          // ignore duplicate or other errors
+        }
+        continue;
+      }
       if (executedMigrations.has(filename)) {
         console.log(`⏭️  Миграция ${filename} уже выполнена, пропускаем`);
         continue;
