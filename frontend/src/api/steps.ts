@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import { Step, APIResponse, PaginatedResponse, FilterOptions } from "../types";
+import { getCache, setCache, invalidateCache, buildKey } from "./cache";
 
 export interface StepFilters extends FilterOptions {
   problemId?: string;
@@ -137,7 +138,7 @@ const normalizeButtonPosition = (
   const normalizedX = Math.min(position.x / canvasWidth, 1);
   const normalizedY = Math.min(position.y / canvasHeight, 1);
 
-  console.log("🔄 API: Converting old pixel coordinates to normalized:", {
+  console.log("��� API: Converting old pixel coordinates to normalized:", {
     original: position,
     normalized: { x: normalizedX, y: normalizedY },
     canvasSize: { width: canvasWidth, height: canvasHeight },
@@ -202,7 +203,7 @@ export class StepsApi {
     limit: number = 20,
     filters: StepFilters = {},
   ): Promise<PaginatedResponse<StepWithDetails>> {
-    const { getCache, setCache, buildKey } = await import("./cache");
+
     const key = buildKey("steps:get", { page, limit, filters });
     const cached = getCache<PaginatedResponse<StepWithDetails>>(key);
     if (cached) return cached;
@@ -283,7 +284,7 @@ export class StepsApi {
       response.data = transformFromBackend(response.data);
     }
 
-    const { invalidateCache } = await import("./cache");
+
     invalidateCache("steps:");
     return response;
   }
@@ -310,7 +311,7 @@ export class StepsApi {
       response.data = transformFromBackend(response.data);
     }
 
-    const { invalidateCache } = await import("./cache");
+
     invalidateCache("steps:");
     return response;
   }
@@ -332,7 +333,7 @@ export class StepsApi {
       response.data = transformFromBackend(response.data);
     }
 
-    const { invalidateCache } = await import("./cache");
+
     invalidateCache("steps:");
     return response;
   }
@@ -360,7 +361,7 @@ export class StepsApi {
     problemId: string,
     isActive: boolean = true,
   ): Promise<APIResponse<StepWithDetails[]>> {
-    const { getCache, setCache, buildKey } = await import("./cache");
+
     const key = buildKey("steps:byProblem", { problemId, isActive });
     const cached = getCache<APIResponse<StepWithDetails[]>>(key);
     if (cached) return cached;
@@ -417,7 +418,7 @@ export class StepsApi {
       response.data = response.data.map(transformFromBackend);
     }
 
-    const { invalidateCache } = await import("./cache");
+
     invalidateCache("steps:");
     return response;
   }
@@ -445,7 +446,7 @@ export class StepsApi {
       response.data = transformFromBackend(response.data);
     }
 
-    const { invalidateCache } = await import("./cache");
+
     invalidateCache("steps:");
     return response;
   }
@@ -466,7 +467,7 @@ export class StepsApi {
       response.data = transformFromBackend(response.data);
     }
 
-    const { invalidateCache } = await import("./cache");
+
     invalidateCache("steps:");
     return response;
   }
@@ -535,7 +536,7 @@ export class StepsApi {
       response.data = response.data.map(transformFromBackend);
     }
 
-    const { invalidateCache } = await import("./cache");
+
     invalidateCache("steps:");
     return response;
   }
