@@ -23,7 +23,11 @@ CREATE INDEX IF NOT EXISTS idx_problems_category ON problems(category);
 CREATE INDEX IF NOT EXISTS idx_problems_active ON problems(is_active);
 CREATE INDEX IF NOT EXISTS idx_diagnostic_steps_step_number ON diagnostic_steps(step_number);
 CREATE INDEX IF NOT EXISTS idx_diagnostic_steps_active ON diagnostic_steps(is_active);
-CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_success ON diagnostic_sessions(success);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='diagnostic_sessions' AND column_name='success') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_success ON diagnostic_sessions(success)';
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_active ON diagnostic_sessions(is_active);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
