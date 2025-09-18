@@ -1,5 +1,5 @@
 -- Migration 002: Adding indexes for performance optimization
--- Создание индексов для оптимизации запросов
+-- Создание индексов для оптимизации запросо��
 
 -- Основные внешние ключи
 CREATE INDEX IF NOT EXISTS idx_problems_device_id ON problems(device_id);
@@ -95,7 +95,11 @@ CREATE INDEX IF NOT EXISTS idx_remotes_active_only ON remotes(id) WHERE is_activ
 CREATE INDEX IF NOT EXISTS idx_tv_interfaces_active_only ON tv_interfaces(id) WHERE is_active = true;
 
 -- Индексы д��я аналитики и отчетности
-CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_analytics ON diagnostic_sessions(device_id, problem_id, success, start_time) WHERE is_active = true;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='diagnostic_sessions' AND column_name='success') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_analytics ON diagnostic_sessions(device_id, problem_id, success, start_time) WHERE is_active = true';
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_session_steps_analytics ON session_steps(session_id, completed, result) WHERE result IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_problems_analytics ON problems(device_id, category, completed_count, success_rate) WHERE is_active = true;
 
