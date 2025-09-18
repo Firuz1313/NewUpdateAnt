@@ -54,6 +54,8 @@ const corsOptions = {
       origin.includes("fly.dev") ||
       origin.includes("builder.codes") ||
       origin.includes("projects.builder.my") ||
+      origin.includes("vercel.app") ||
+      origin.includes("vercel.dev") ||
       origin.includes("localhost") ||
       allowedOrigins.indexOf(origin) !== -1
     ) {
@@ -176,7 +178,7 @@ app.use((req, res, next) => {
     req.setTimeout(180000, () => {
       // 180 seconds (3 minutes)
       console.log(
-        `⏰ Request timeout for TV interface operation: ${req.method} ${req.url}`,
+        `��� Request timeout for TV interface operation: ${req.method} ${req.url}`,
       );
       if (!res.headersSent) {
         res.status(408).json({

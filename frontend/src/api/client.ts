@@ -593,6 +593,19 @@ export class ApiClient {
 
 // Create default API client instance
 const getApiBaseUrl = (): string => {
+  // 1) Explicit env override for hosted deployments (Vercel/Netlify/etc.)
+  try {
+    const envUrl = (typeof import.meta !== "undefined" &&
+      (import.meta as any).env &&
+      (import.meta as any).env.VITE_API_BASE_URL) as string | undefined;
+
+    if (envUrl && typeof envUrl === "string" && envUrl.trim()) {
+      const cleaned = envUrl.replace(/\/$/, "");
+      console.log("🔧 Using VITE_API_BASE_URL:", cleaned);
+      return cleaned;
+    }
+  } catch {}
+
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
     const port = window.location.port;
@@ -609,7 +622,7 @@ const getApiBaseUrl = (): string => {
       return proxyUrl;
     }
 
-    // Локальная разработка - используем Vite proxy для /api
+    // Локальная разработка - использу��м Vite proxy для /api
     if (hostname === "localhost") {
       const proxyUrl = "/api/v1";
       console.log("🏠 Local development - using Vite proxy:", proxyUrl);
