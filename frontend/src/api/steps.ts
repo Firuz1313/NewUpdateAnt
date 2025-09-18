@@ -203,7 +203,6 @@ export class StepsApi {
     limit: number = 20,
     filters: StepFilters = {},
   ): Promise<PaginatedResponse<StepWithDetails>> {
-
     const key = buildKey("steps:get", { page, limit, filters });
     const cached = getCache<PaginatedResponse<StepWithDetails>>(key);
     if (cached) return cached;
@@ -284,7 +283,6 @@ export class StepsApi {
       response.data = transformFromBackend(response.data);
     }
 
-
     invalidateCache("steps:");
     return response;
   }
@@ -311,7 +309,6 @@ export class StepsApi {
       response.data = transformFromBackend(response.data);
     }
 
-
     invalidateCache("steps:");
     return response;
   }
@@ -332,7 +329,6 @@ export class StepsApi {
     if (response.data) {
       response.data = transformFromBackend(response.data);
     }
-
 
     invalidateCache("steps:");
     return response;
@@ -361,7 +357,6 @@ export class StepsApi {
     problemId: string,
     isActive: boolean = true,
   ): Promise<APIResponse<StepWithDetails[]>> {
-
     const key = buildKey("steps:byProblem", { problemId, isActive });
     const cached = getCache<APIResponse<StepWithDetails[]>>(key);
     if (cached) return cached;
@@ -418,7 +413,6 @@ export class StepsApi {
       response.data = response.data.map(transformFromBackend);
     }
 
-
     invalidateCache("steps:");
     return response;
   }
@@ -446,7 +440,6 @@ export class StepsApi {
       response.data = transformFromBackend(response.data);
     }
 
-
     invalidateCache("steps:");
     return response;
   }
@@ -466,7 +459,6 @@ export class StepsApi {
     if (response.data) {
       response.data = transformFromBackend(response.data);
     }
-
 
     invalidateCache("steps:");
     return response;
@@ -535,7 +527,6 @@ export class StepsApi {
     if (response.data && Array.isArray(response.data)) {
       response.data = response.data.map(transformFromBackend);
     }
-
 
     invalidateCache("steps:");
     return response;
