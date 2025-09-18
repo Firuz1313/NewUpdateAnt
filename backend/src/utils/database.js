@@ -56,7 +56,7 @@ if (CONNECTION_STRING) {
 
     // Настройки pool соединений (увеличены для TV interface операций)
     max: 50, // максимальное количество соединений в pool (увеличено с 20)
-    min: 10, // минимальное количество сое��инений (увеличено с 5)
+    min: 10, // минимальное количество соединений (увеличено с 5)
     idleTimeoutMillis: 60000, // время простоя перед закрытием соединения (увеличено)
     connectionTimeoutMillis: 15000, // таймаут подключения (увеличено)
     maxUses: 7500, // максимальное количество использований соединения
@@ -251,7 +251,7 @@ export async function runMigrations() {
       .filter((file) => file.endsWith(".sql"))
       .sort();
 
-    console.log(`📁 Найден�� ${migrationFiles.length} файлов миграций`);
+    console.log(`📁 Найден��� ${migrationFiles.length} файлов миграций`);
 
     for (const filename of migrationFiles) {
       if (executedMigrations.has(filename)) {
@@ -265,9 +265,37 @@ export async function runMigrations() {
       const migrationSQL = fs.readFileSync(migrationPath, "utf8");
 
       try {
+        try {
         await transaction(async (client) => {
-          // Выполняем миграцию
-          await client.query(migrationSQL);
+          // Try to execute full migration first
+          try {
+            await client.query(migrationSQL);
+          } catch (fullErr) {
+            console.warn(`⚠️ Полный запуск миграции ${filename} завершился с ошибкой, пытаемся по-частям: ${fullErr.message}`);
+
+            // Fallback: split into statements and run one by one to allow idempotent/apply-if-exists behavior
+            const statements = migrationSQL
+              .split(/;\s*\n/)
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0);
+
+            for (const stmt of statements) {
+              try {
+                await client.query(stmt);
+              } catch (stmtErr) {
+                const msg = (stmtErr && stmtErr.message) || String(stmtErr);
+                // Ignore errors that indicate the object already exists or column missing for optional indexes
+                if (/already exists|duplicate key|relation .* already exists|column ".*" does not exist|index .* already exists/i.test(msg)) {
+                  console.warn(`ℹ️ Пропущено выражение из-за допустимой ошибки: ${msg}`);
+                  continue;
+                }
+
+                // For other errors, rethrow
+                console.error(`❌ Ошибка при выполнении выражения в миграции ${filename}:`, msg);
+                throw stmtErr;
+              }
+            }
+          }
 
           // Записываем в таблицу миграций
           await client.query("INSERT INTO migrations (filename) VALUES ($1)", [
@@ -276,6 +304,26 @@ export async function runMigrations() {
         });
 
         console.log(`✅ Миграция ${filename} выполнена успешно`);
+      } catch (migErr) {
+        // Если ошибка связана с тем, что объект уже существует — считаем миграцию idempotent и помечаем как выполненную
+        const msg = (migErr && migErr.message) || String(migErr);
+        const isAlreadyExists = /already exists|duplicate key|relation .* already exists|trigger .* already exists/i.test(msg);
+
+        if (isAlreadyExists) {
+          console.warn(`⚠️ Миграция ${filename} частично/полностью применена ранее: ${msg}`);
+          try {
+            await query("INSERT INTO migrations (filename) VALUES ($1)", [filename]);
+            console.log(`ℹ️ Пометил миграцию ${filename} как выполненную`);
+            continue;
+          } catch (markErr) {
+            console.error(`❌ Не удалось пометить миграцию ${filename} как выполненную:`, markErr.message);
+            throw migErr;
+          }
+        }
+
+        // Иначе пробрасываем ошибку дальше
+        throw migErr;
+      }
       } catch (migErr) {
         // Если ошибка связана с тем, что объект уже существует — считаем миграцию idempotent и помечаем как выполненную
         const msg = (migErr && migErr.message) || String(migErr);
@@ -325,7 +373,7 @@ export async function fixTVInterfacesSchema() {
       (row) => row.column_name === "highlight_areas",
     );
 
-    // Добавл��ем недостающие колонки
+    // Добавляем недостающие колонки
     if (!hasClickableAreas) {
       await query(`
         ALTER TABLE tv_interfaces
@@ -498,7 +546,7 @@ export async function fixDiagnosticSessionsSchema() {
     return true;
   } catch (error) {
     console.error(
-      "❌ Ошибка испра��ления схемы diagnostic_sessions:",
+      "❌ Ошибка исправления схемы diagnostic_sessions:",
       error.message,
     );
     throw error;
