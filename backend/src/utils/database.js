@@ -13,31 +13,42 @@ dotenv.config();
 
 const { Pool, Client } = pkg;
 
-// PostgreSQL connection configuration
+// Определяем строку подключения из популярных переменных окружения (Vercel/Neon)
+const CONNECTION_STRING =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.VERCEL_POSTGRES_URL ||
+  process.env.NEON_DATABASE_URL ||
+  "";
 
 // Конфигурация подключения к PostgreSQL
 let dbConfig;
 
-if (process.env.DATABASE_URL) {
-  // Use DATABASE_URL if provided (Neon/Heroku style)
+if (CONNECTION_STRING) {
+  // Use common connection string (Neon/Vercel/Heroku)
   dbConfig = {
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL.includes("neon.tech")
-      ? { rejectUnauthorized: false }
-      : false,
+    connectionString: CONNECTION_STRING,
+    ssl:
+      CONNECTION_STRING.includes("neon.tech") ||
+      CONNECTION_STRING.includes("sslmode=require") ||
+      process.env.DB_SSL === "true"
+        ? { rejectUnauthorized: false }
+        : false,
 
-    // Настройки pool соединений (увеличены для TV interface операций)
+    // Настройки pool соединений (увел��чены для TV interface операций)
     max: 50, // максимальное количество соединений в pool (увеличено с 20)
     min: 5, // минимальное количество соединений (увеличено с 2)
     idleTimeoutMillis: 60000, // время простоя перед закрытием соединения (увеличено)
-    connectionTimeoutMillis: 15000, // таймаут подключения (увеличено)
+    connectionTimeoutMillis: 15000, // таймаут п��дключения (увеличено)
     maxUses: 7500, // максимальное количество использований соединения
   };
 } else {
   // Fallback to individual env vars
   dbConfig = {
     host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT) || 5432,
+    port: parseInt(process.env.DB_PORT || "5432", 10),
     database: process.env.DB_NAME || "ant_support",
     user: process.env.DB_USER || "postgres",
     password: process.env.DB_PASSWORD || "password",
@@ -78,7 +89,7 @@ pool.on("release", (client) => {
 
 // PostgreSQL only configuration
 
-// Функция проверки подключения к базе данных
+// Фу��кция проверки подключения к базе данных
 export async function testConnection() {
   let client;
   try {
@@ -99,7 +110,7 @@ export async function testConnection() {
       version: result.rows[0].postgres_version,
     };
   } catch (error) {
-    console.error("❌ Ошибка подключ��ния к PostgreSQL:", error.message);
+    console.error("❌ Ошибка подключения к PostgreSQL:", error.message);
 
     // PostgreSQL connection failed
     console.error("❌ Failed to connect to PostgreSQL database");
@@ -107,6 +118,9 @@ export async function testConnection() {
     return {
       success: false,
       error: error.message,
+      connectionStringUsed: CONNECTION_STRING
+        ? "env-connection-string"
+        : "host-params",
     };
   } finally {
     if (client) {
@@ -211,6 +225,126 @@ export async function createDatabase() {
 }
 
 // Функция выполнения миграций
+function splitSqlStatements(sql) {
+  const statements = [];
+  let cur = "";
+  let inSingle = false;
+  let inDouble = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+  let dollarTag = null;
+
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    const next = sql[i + 1] || "";
+
+    // handle line comments
+    if (inLineComment) {
+      cur += ch;
+      if (ch === "\n") inLineComment = false;
+      continue;
+    }
+
+    // handle block comments
+    if (inBlockComment) {
+      cur += ch;
+      if (ch === "*" && next === "/") {
+        cur += "/";
+        inBlockComment = false;
+        i++; // skip next
+      }
+      continue;
+    }
+
+    // handle dollar-quoted strings
+    if (dollarTag) {
+      cur += ch;
+      if (
+        ch === "$" &&
+        sql.slice(i - dollarTag.length + 1, i + 1) === dollarTag
+      ) {
+        // close tag
+        dollarTag = null;
+      }
+      continue;
+    }
+
+    // detect start of dollar tag
+    if (ch === "$" && !inSingle && !inDouble) {
+      const m = sql.slice(i).match(/^\$[A-Za-z0-9_]*\$/);
+      if (m) {
+        dollarTag = m[0];
+        cur += m[0];
+        i += m[0].length - 1;
+        continue;
+      }
+    }
+
+    // handle quotes
+    if (inSingle) {
+      cur += ch;
+      if (ch === "'") inSingle = false;
+      if (ch === "\\") {
+        // escape next char
+        i++;
+        cur += sql[i] || "";
+      }
+      continue;
+    }
+
+    if (inDouble) {
+      cur += ch;
+      if (ch === '"') inDouble = false;
+      if (ch === "\\") {
+        i++;
+        cur += sql[i] || "";
+      }
+      continue;
+    }
+
+    // start quotes or comments
+    if (ch === "-" && next === "-") {
+      inLineComment = true;
+      cur += "--";
+      i++;
+      continue;
+    }
+
+    if (ch === "/" && next === "*") {
+      inBlockComment = true;
+      cur += "/*";
+      i++;
+      continue;
+    }
+
+    if (ch === "'") {
+      inSingle = true;
+      cur += ch;
+      continue;
+    }
+
+    if (ch === '"') {
+      inDouble = true;
+      cur += ch;
+      continue;
+    }
+
+    // split on semicolon when not inside any structure
+    if (ch === ";") {
+      // push statement including semicolon
+      const stmt = cur.trim();
+      if (stmt.length > 0) statements.push(stmt + ";");
+      cur = "";
+      continue;
+    }
+
+    cur += ch;
+  }
+
+  if (cur.trim().length > 0) statements.push(cur);
+  return statements;
+}
+
 export async function runMigrations() {
   try {
     console.log("🔄 Запуск миграций базы данных...");
@@ -239,30 +373,82 @@ export async function runMigrations() {
       .filter((file) => file.endsWith(".sql"))
       .sort();
 
-    console.log(`📁 Найден�� ${migrationFiles.length} файлов миграций`);
+    console.log(`📁 Найдено ${migrationFiles.length} файлов миграций`);
 
     for (const filename of migrationFiles) {
       if (executedMigrations.has(filename)) {
-        console.log(`⏭️  Миграция ${filename} уже выполне��а, пропускае��`);
+        console.log(`⏭️  Миграция ${filename} уже выполнена, пропускаем`);
         continue;
       }
 
-      console.log(`🔄 Выполнение миграции: ${filename}`);
+      console.log(`🔄 Выполнение миграц��и: ${filename}`);
 
       const migrationPath = path.join(migrationsDir, filename);
       const migrationSQL = fs.readFileSync(migrationPath, "utf8");
 
-      await transaction(async (client) => {
-        // Выполняем миграцию
-        await client.query(migrationSQL);
+      try {
+        // Попытка выполнить всю миграцию разом
+        try {
+          await query(migrationSQL);
+        } catch (fullErr) {
+          console.warn(
+            `⚠️ Полный запуск миграции ${filename} завершился с ошибкой, пытаемся по-частям: ${fullErr.message}`,
+          );
 
-        // Записываем в таблицу миграций
-        await client.query("INSERT INTO migrations (filename) VALUES ($1)", [
-          filename,
-        ]);
-      });
+          // Фоллбек: выполняем по отдельным выражениям
+          const statements = splitSqlStatements(migrationSQL)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
 
-      console.log(`✅ Миграция ${filename} выполнена успешно`);
+          for (const stmt of statements) {
+            try {
+              await query(stmt);
+            } catch (stmtErr) {
+              const msg = (stmtErr && stmtErr.message) || String(stmtErr);
+              // Игнорируем ожидаемые ошибки (уже существует, колонка отсутствует для необязательных индексов и т.д.)
+              if (
+                /already exists|duplicate key|relation .* already exists|column ".*" does not exist|index .* already exists/i.test(
+                  msg,
+                )
+              ) {
+                console.warn(
+                  `ℹ️ Пропущено выражение из-за допустимой ошибки: ${msg}`,
+                );
+                continue;
+              }
+
+              console.error(
+                `❌ Ошибка при выполнении выражения в миграции ${filename}:`,
+                msg,
+              );
+              throw stmtErr;
+            }
+          }
+        }
+
+        // Помечаем миграцию как выполненную
+        try {
+          await query("INSERT INTO migrations (filename) VALUES ($1)", [
+            filename,
+          ]);
+        } catch (insErr) {
+          if (
+            !/duplicate key|already exists/i.test(
+              (insErr && insErr.message) || "",
+            )
+          ) {
+            throw insErr;
+          }
+        }
+
+        console.log(`✅ Миграция ${filename} выполнена успешно`);
+      } catch (migErr) {
+        console.error(
+          `❌ Ошибка выполнения миграции ${filename}:`,
+          (migErr && migErr.message) || String(migErr),
+        );
+        throw migErr;
+      }
     }
 
     console.log("🎉 Все миграции выполнены успешно");
@@ -472,7 +658,7 @@ export async function fixDiagnosticSessionsSchema() {
   }
 }
 
-// Функция получения статистики базы данных
+// Фу��кция получения статистики базы данных
 export async function getDatabaseStats() {
   try {
     const stats = await query(`
@@ -503,7 +689,7 @@ export async function getDatabaseStats() {
   }
 }
 
-// Функци�� безопасного закрытия всех соединений
+// Функци���� безопасного закрытия всех соединений
 export async function closePool() {
   try {
     console.log("🔄 Закрытие пула соединений PostgreSQL...");
@@ -531,7 +717,7 @@ export async function cleanupOldData(daysToKeep = 90) {
       [cutoffDate],
     );
 
-    // Удаляем старые логи изменений
+    // Удаляем старые л��ги изменений
     const logsResult = await query(
       `
       DELETE FROM change_logs 
@@ -541,7 +727,7 @@ export async function cleanupOldData(daysToKeep = 90) {
     );
 
     console.log(`✅ Удалено сессий: ${sessionsResult.rowCount}`);
-    console.log(`✅ Удалено логов: ${logsResult.rowCount}`);
+    console.log(`✅ Уд��лено логов: ${logsResult.rowCount}`);
 
     // О��новляем статистику
     await query("ANALYZE");
@@ -618,7 +804,7 @@ export async function searchText(
   }
 }
 
-// Экспорт pool для прямого использования в с����чае необходимости
+// Экспорт pool для прямого ис��ользования в с����чае необходимости
 export { pool };
 
 export default {

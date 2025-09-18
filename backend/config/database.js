@@ -8,35 +8,48 @@ import dotenv from "dotenv";
 // Загружаем переменные окружения
 dotenv.config();
 
+// Определяем строку подключения из популярных переменных окружения (Vercel/Neon)
+const CONNECTION_STRING =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.VERCEL_POSTGRES_URL ||
+  process.env.NEON_DATABASE_URL ||
+  "";
+
 // Настройки подключения к базе данных
 export const databaseConfig = {
   // Основные параметры подключения
   connection: {
-    // Используем DATABASE_URL если доступен (приоритет для облачных БД)
-    connectionString: process.env.DATABASE_URL,
+    // Поддержка разных провайдеров через единую ст��оку
+    connectionString: CONNECTION_STRING || undefined,
 
     // Fallback настройки для локальной разработки
     host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT) || 5432,
+    port: parseInt(process.env.DB_PORT || "5432", 10),
     database: process.env.DB_NAME || "ant_support",
     user: process.env.DB_USER || "postgres",
     password: process.env.DB_PASSWORD || "password",
 
-    // SSL настройки
-    ssl: process.env.DATABASE_URL?.includes("neon.tech")
-      ? { rejectUnauthorized: false }
-      : process.env.DB_SSL === "true"
+    // SSL настройки (автовключение для Neon/Vercel и при sslmode=require)
+    ssl:
+      CONNECTION_STRING.includes("neon.tech") ||
+      CONNECTION_STRING.includes("sslmode=require") ||
+      process.env.DB_SSL === "true"
         ? { rejectUnauthorized: false }
         : false,
   },
 
   // Настройки пула соединений
   pool: {
-    min: parseInt(process.env.DB_POOL_MIN) || 2,
-    max: parseInt(process.env.DB_POOL_MAX) || 20,
-    idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
-    connectionTimeoutMillis:
-      parseInt(process.env.DB_CONNECTION_TIMEOUT) || 10000,
+    min: parseInt(process.env.DB_POOL_MIN || "2", 10),
+    max: parseInt(process.env.DB_POOL_MAX || "20", 10),
+    idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || "30000", 10),
+    connectionTimeoutMillis: parseInt(
+      process.env.DB_CONNECTION_TIMEOUT || "10000",
+      10,
+    ),
     maxUses: 7500, // максимальное количество использований соединения
   },
 
@@ -82,15 +95,17 @@ export function validateDatabaseConfig() {
   // Проверяем наличие обязательных параметров
   if (!config.connectionString && (!config.host || !config.database)) {
     throw new Error(
-      "Не задана строка подключения DATABASE_URL или параметры host/database",
+      "Не задана строка подключения DATABASE_URL/POSTGRES_URL или параметры host/database",
     );
   }
 
   if (
     config.connectionString &&
-    !config.connectionString.startsWith("postgresql://")
+    !(/^postgres(ql)?:\/\//.test(config.connectionString))
   ) {
-    throw new Error("DATABASE_URL должен начинаться с postgresql://");
+    throw new Error(
+      "DATABASE_URL/POSTGRES_URL должен начинаться с postgres:// или postgresql://",
+    );
   }
 
   return true;

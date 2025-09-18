@@ -1,5 +1,5 @@
 -- Migration 002: Adding indexes for performance optimization
--- Создание индексов для оптимизации запросов
+-- Создание индексов для оптимизации запросо��
 
 -- Основные внешние ключи
 CREATE INDEX IF NOT EXISTS idx_problems_device_id ON problems(device_id);
@@ -23,7 +23,11 @@ CREATE INDEX IF NOT EXISTS idx_problems_category ON problems(category);
 CREATE INDEX IF NOT EXISTS idx_problems_active ON problems(is_active);
 CREATE INDEX IF NOT EXISTS idx_diagnostic_steps_step_number ON diagnostic_steps(step_number);
 CREATE INDEX IF NOT EXISTS idx_diagnostic_steps_active ON diagnostic_steps(is_active);
-CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_success ON diagnostic_sessions(success);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='diagnostic_sessions' AND column_name='success') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_success ON diagnostic_sessions(success)';
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_active ON diagnostic_sessions(is_active);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
@@ -45,7 +49,11 @@ CREATE INDEX IF NOT EXISTS idx_problems_device_active ON problems(device_id, is_
 CREATE INDEX IF NOT EXISTS idx_diagnostic_steps_problem_number ON diagnostic_steps(problem_id, step_number);
 CREATE INDEX IF NOT EXISTS idx_diagnostic_steps_problem_active ON diagnostic_steps(problem_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_device_time ON diagnostic_sessions(device_id, start_time);
-CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_device_success ON diagnostic_sessions(device_id, success);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='diagnostic_sessions' AND column_name='success') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_device_success ON diagnostic_sessions(device_id, success)';
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_session_steps_session_number ON session_steps(session_id, step_number);
 CREATE INDEX IF NOT EXISTS idx_change_logs_entity_type_id ON change_logs(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_change_logs_user_time ON change_logs(user_id, created_at);
@@ -87,7 +95,11 @@ CREATE INDEX IF NOT EXISTS idx_remotes_active_only ON remotes(id) WHERE is_activ
 CREATE INDEX IF NOT EXISTS idx_tv_interfaces_active_only ON tv_interfaces(id) WHERE is_active = true;
 
 -- Индексы д��я аналитики и отчетности
-CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_analytics ON diagnostic_sessions(device_id, problem_id, success, start_time) WHERE is_active = true;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='diagnostic_sessions' AND column_name='success') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_analytics ON diagnostic_sessions(device_id, problem_id, success, start_time) WHERE is_active = true';
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_session_steps_analytics ON session_steps(session_id, completed, result) WHERE result IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_problems_analytics ON problems(device_id, category, completed_count, success_rate) WHERE is_active = true;
 
