@@ -22,6 +22,7 @@ import { sessionsApi } from "./sessions";
 import { remotesApi } from "./remotes";
 import { authApi } from "./auth";
 import { usersApi } from "./users";
+import tvInterfacesAPI from "./tvInterfaces";
 // Re-export API services
 export {
   devicesApi,
