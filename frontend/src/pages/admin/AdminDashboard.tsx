@@ -359,14 +359,14 @@ const AdminDashboard = () => {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stepStatsData.active}</div>
+            <div className="text-2xl font-bold">{adminStats?.steps ?? stepStatsData.active}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-blue-600">{stepStatsData.total}</span> всего
+              <span className="text-blue-600">{adminStats?.steps ?? stepStatsData.total}</span> всего
             </p>
             <Progress
               value={
-                stepStatsData.total > 0
-                  ? (stepStatsData.active / stepStatsData.total) * 100
+                (adminStats?.steps ?? stepStatsData.total) > 0
+                  ? ((adminStats?.steps ?? stepStatsData.active) / (adminStats?.steps ?? stepStatsData.total)) * 100
                   : 0
               }
               className="mt-3"
@@ -506,7 +506,7 @@ const AdminDashboard = () => {
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Файлов��е хранилище</span>
+                <span className="text-sm font-medium">Файловое хранилище</span>
                 <Badge variant="default" className="bg-green-600">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Работает
