@@ -404,7 +404,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary">
-              {devices.length}
+              {adminStats?.devices ?? devices.length}
             </div>
             <p className="text-sm text-muted-foreground">устройств в системе</p>
           </CardContent>
@@ -446,7 +446,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart3 className="h-5 w-5 mr-2" />
-              Распределение проблем по устройствам
+              Распределение проблем по у��тройствам
             </CardTitle>
           </CardHeader>
           <CardContent>
