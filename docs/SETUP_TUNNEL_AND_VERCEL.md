@@ -3,6 +3,7 @@
 DO NOT commit secrets into the repository. Use the commands below locally and paste secrets into Vercel UI or Vercel CLI when prompted.
 
 ## Option A — Expose your local Postgres with ngrok (quick)
+
 1. Install ngrok: https://ngrok.com/download
 2. Start TCP tunnel for Postgres (run locally where Postgres listens):
 
@@ -35,6 +36,7 @@ Notes: ngrok tunnels are ephemeral; for a stable public endpoint use a cloud DB.
 ---
 
 ## Option B — Create SSH tunnel (if you have a public server)
+
 1. From your local machine run (keeps port 5432 locally forwarded through remote):
 
    ssh -N -L 5432:localhost:5432 your-user@public-host.example.com
@@ -48,6 +50,7 @@ Notes: ngrok tunnels are ephemeral; for a stable public endpoint use a cloud DB.
 ---
 
 ## Security and practical notes
+
 - Do not commit credentials to git. Use Vercel UI or `vercel env` to store secrets.
 - For production, prefer a managed DB (Neon, Supabase, AWS RDS) with proper networking.
 - If you need a persistent public DB quickly, consider Neon (next doc) or Supabase.
@@ -55,4 +58,5 @@ Notes: ngrok tunnels are ephemeral; for a stable public endpoint use a cloud DB.
 ---
 
 ## I already set the dev-server DATABASE_URL (dev environment only)
+
 I have set the dev server environment variable for the running preview environment; that does not change Vercel project variables or repository files.
