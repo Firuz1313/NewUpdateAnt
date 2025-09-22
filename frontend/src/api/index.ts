@@ -34,6 +34,7 @@ export {
   authApi,
   usersApi,
   tvInterfacesAPI,
+  adminApi,
 };
 
 // Export types for consumers
