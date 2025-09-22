@@ -97,31 +97,40 @@ const TVInterfaceBuilder = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load TV interfaces on component mount
+  // Pagination state for TV interfaces
+  const [page, setPage] = useState(1);
+  const limit = 20;
+
+  // Load TV interfaces on component mount and when filters/page change
   useEffect(() => {
     loadTVInterfaces();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, searchTerm, selectedDeviceFilter, selectedTypeFilter]);
 
   const loadTVInterfaces = async () => {
     setIsLoading(true);
     try {
-      console.log("📡 Loading TV interfaces...");
-      const response = await tvInterfacesAPI.getAll();
+      console.log("📡 Loading TV interfaces (paginated)...", { page, limit });
+      const offset = (page - 1) * limit;
+      const filters: any = { limit, offset };
+      if (selectedDeviceFilter && selectedDeviceFilter !== "all") {
+        filters.device_id = selectedDeviceFilter;
+      }
+      if (selectedTypeFilter && selectedTypeFilter !== "all") {
+        filters.type = selectedTypeFilter;
+      }
+      if (searchTerm && searchTerm.trim().length > 0) {
+        filters.search = searchTerm.trim();
+      }
+
+      const response = await tvInterfacesAPI.getAll(filters);
       console.log("📡 TV interfaces response:", response);
 
       if (response.success && response.data) {
         // Нормализуем данные с бэкенда
-        const normalizedInterfaces = response.data.map((iface) => {
-          const normalized = tvInterfaceUtils.normalizeFromBackend(iface);
-          console.log("📡 Normalized interface:", normalized.id, {
-            hasScreenshot: tvInterfaceUtils.hasScreenshot(normalized),
-            screenshotUrl:
-              tvInterfaceUtils.getScreenshotUrl(normalized)?.substring(0, 50) +
-              "...",
-            createdAt: normalized.createdAt || normalized.created_at,
-          });
-          return normalized;
-        });
+        const normalizedInterfaces = response.data.map((iface) =>
+          tvInterfaceUtils.normalizeFromBackend(iface),
+        );
         setTVInterfaces(normalizedInterfaces);
         console.log("📡 Total interfaces loaded:", normalizedInterfaces.length);
       } else {
@@ -312,7 +321,7 @@ const TVInterfaceBuilder = () => {
         deviceId: formData.deviceId,
       };
 
-      // Добавляем screenshot_data только если был загружен новый скриншот
+      // Добав��яем screenshot_data только если был загружен новый скриншот
       if (
         formData.screenshotData &&
         formData.screenshotData.startsWith("data:")
@@ -633,7 +642,7 @@ const TVInterfaceBuilder = () => {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Выберите устройство" />
+                      <SelectValue placeholder="Выберите уст��ойство" />
                     </SelectTrigger>
                     <SelectContent>
                       {devices.map((device) => (
@@ -730,7 +739,7 @@ const TVInterfaceBuilder = () => {
                   </Button>
                   <Button onClick={handleCreate} disabled={isLoading}>
                     <Save className="h-4 w-4 mr-2" />
-                    Создать
+                    Созда��ь
                   </Button>
                 </div>
               </div>
