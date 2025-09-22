@@ -274,7 +274,7 @@ const AdminDashboard = () => {
             Панель управления
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Общий обзор системы диагностики ТВ‑приставок
+            Общий обзор системы диагност��ки ТВ‑приставок
           </p>
         </div>
         <div className="flex space-x-2">
@@ -326,13 +326,13 @@ const AdminDashboard = () => {
             <Monitor className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{deviceStats.active}</div>
+            <div className="text-2xl font-bold">{adminStats?.devices ?? deviceStats.active}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+{deviceStats.active}</span>{" "}
+              <span className="text-green-600">+{adminStats?.devices ?? deviceStats.active}</span>{" "}
               активных
             </p>
             <Progress
-              value={(deviceStats.active / deviceStats.total) * 100}
+              value={((adminStats?.devices ?? deviceStats.active) / (adminStats?.devices ?? Math.max(deviceStats.total,1))) * 100}
               className="mt-3"
             />
           </CardContent>
@@ -486,7 +486,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Activity className="h-5 w-5 mr-2" />
-              Состояние систе��ы
+              Состояние системы
             </CardTitle>
           </CardHeader>
           <CardContent>
