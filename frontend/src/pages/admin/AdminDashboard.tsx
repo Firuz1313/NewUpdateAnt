@@ -446,7 +446,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart3 className="h-5 w-5 mr-2" />
-              Распределение проблем по у��тройствам
+              Распределение проблем по устройствам
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -678,7 +678,41 @@ const AdminDashboard = () => {
               </Button>
               <Button className="w-full justify-start" variant="outline">
                 <Download className="h-4 w-4 mr-2" />
-                Экспорт резервно�� копии
+                Экспорт резервной копии
+              </Button>
+              <Button
+                className="w-full justify-start"
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    toast({ message: "Запуск оптимизации базы TV Interfaces..." });
+                    const res = await (await import("@/api")).adminApi.optimizeTVInterfaces();
+                    console.log("Optimize result:", res);
+                    if (res && res.data) {
+                      toast({ message: "Оптимизация завершена" });
+                    } else {
+                      toast({ message: "Оптимизация запущена" });
+                    }
+                    // Refresh stats after optimization
+                    setTimeout(() => {
+                      (async () => {
+                        try {
+                          const statsRes = await (await import("@/api")).adminApi.getStats();
+                          setAdminStats(statsRes.data);
+                        } catch (e) {
+                          // ignore
+                        }
+                      })();
+                    }, 2000);
+                  } catch (error) {
+                    console.error("Optimize failed:", error);
+                    toast({ message: "Ошибка оптимизации базы" });
+                  }
+                }}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Оптимизировать TV Interfaces
               </Button>
 
               <div className="border-t pt-3 mt-4">
