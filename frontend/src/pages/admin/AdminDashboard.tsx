@@ -160,6 +160,8 @@ const AdminDashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
 
   // Statistics - using real API data
+  const [adminStats, setAdminStats] = useState<any>(null);
+
   const deviceStats = {
     total: devices.length,
     active: devices.filter((d: any) => d.is_active).length,
@@ -178,6 +180,24 @@ const AdminDashboard = () => {
     active: sessionStats?.activeSessions || activeSessionsList.length,
     successRate: sessionStats?.successRate || 0,
   };
+
+  // Fetch lightweight admin stats (counts) to speed up dashboard
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await (await import("@/api")).adminApi.getStats();
+        if (mounted && res && res.data) {
+          setAdminStats(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load admin stats:", err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Recent activity with sample data if empty
   const recentChanges =
@@ -466,7 +486,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Activity className="h-5 w-5 mr-2" />
-              Состояние системы
+              Состояние систе��ы
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -748,7 +768,7 @@ const AdminDashboard = () => {
                       }
                     >
                       {problem.status === "published"
-                        ? "Опубликов��но"
+                        ? "Опубликовано"
                         : "Черновик"}
                     </Badge>
                     <DropdownMenu>
