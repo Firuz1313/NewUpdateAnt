@@ -274,7 +274,7 @@ const AdminDashboard = () => {
             Панель управления
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Общий обзор системы диагност��ки ТВ‑приставок
+            Общий обзор системы диагностики ТВ‑приставок
           </p>
         </div>
         <div className="flex space-x-2">
@@ -344,7 +344,7 @@ const AdminDashboard = () => {
             <AlertTriangle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{problemStats.total}</div>
+            <div className="text-2xl font-bold">{adminStats?.problems ?? problemStats.total}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">{publishedProblems}</span>{" "}
               опубликованы
@@ -506,7 +506,7 @@ const AdminDashboard = () => {
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Файловое хранилище</span>
+                <span className="text-sm font-medium">Файлов��е хранилище</span>
                 <Badge variant="default" className="bg-green-600">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Работает
