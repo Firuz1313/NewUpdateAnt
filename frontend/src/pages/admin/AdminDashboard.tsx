@@ -41,7 +41,8 @@ import { devicesApi, problemsApi, stepsApi, sessionsApi, remotesApi, tvInterface
 const AdminDashboard = () => {
   const { data: devicesResponse } = useDevices();
   const { data: problemsResponse } = useProblems();
-  const { data: stepsResponse } = useSteps(1, 1000); // Get all steps
+  // Load only one step page to obtain total via pagination, avoid fetching all steps (performance)
+  const { data: stepsResponse } = useSteps(1, 1); // Get minimal page to read pagination.total
   const { data: activeSessionsResponse } = useActiveSessions();
   const { data: sessionStatsResponse } = useSessionStats();
 
@@ -352,7 +353,7 @@ const AdminDashboard = () => {
         <Card className="border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Активные сессии
+              А��тивные сессии
             </CardTitle>
             <Activity className="h-4 w-4 text-purple-600" />
           </CardHeader>
@@ -634,7 +635,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Settings className="h-5 w-5 mr-2" />
-              Быстрые действия
+              Б��стрые действия
             </CardTitle>
           </CardHeader>
           <CardContent>
