@@ -158,7 +158,7 @@ router.get("/docs", (req, res) => {
           routes: {
             "GET /tv-interfaces": "Получение списка интерфейсов ТВ",
             "GET /tv-interfaces/:id": "Получение интерфейса ТВ по ID",
-            "POST /tv-interfaces": "Создание нового интерфейса ТВ",
+            "POST /tv-interfaces": "Создани�� нового интерфейса ТВ",
             "PUT /tv-interfaces/:id": "Обновление интерфейса ТВ",
             "DELETE /tv-interfaces/:id": "Удаление интерфейса ТВ",
             "POST /tv-interfaces/:id/duplicate": "Дублирование интерфейса ТВ",
@@ -176,7 +176,7 @@ router.get("/docs", (req, res) => {
         403: "Forbidden - Недостаточно прав доступа",
         404: "Not Found - Ресурс не найден",
         409: "Conflict - Конфликт данных (дубликаты, ограничения)",
-        422: "Unprocessable Entity - Ошибка бизнес-логики",
+        422: "Unprocessable Entity - Ошибка бизнес-лог��ки",
         429: "Too Many Requests - Превышен лимит запросов",
         500: "Internal Server Error - Внутренняя ошибка сервера",
         503: "Service Unavailable - Сервис временно недоступен",
@@ -221,8 +221,10 @@ router.use(`${API_V1_PREFIX}/optimization`, optimizationRoutes);
 // Auth & Users
 import authRoutes from "./authRoutes.js";
 import userRoutes from "./userRoutes.js";
+import adminRoutes from "./adminRoutes.js";
 router.use(`${API_V1_PREFIX}/auth`, authRoutes);
 router.use(`${API_V1_PREFIX}/users`, userRoutes);
+router.use(`${API_V1_PREFIX}/admin`, adminRoutes);
 
 // Обработчик для несуществующих эндпоинтов API
 router.use("*", (req, res) => {

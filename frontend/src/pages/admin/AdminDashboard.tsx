@@ -36,18 +36,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  devicesApi,
+  problemsApi,
+  stepsApi,
+  sessionsApi,
+  remotesApi,
+  tvInterfacesAPI,
+  usersApi,
+} from "@/api";
 
 const AdminDashboard = () => {
   const { data: devicesResponse } = useDevices();
   const { data: problemsResponse } = useProblems();
-  const { data: stepsResponse } = useSteps(1, 1000); // Get all steps
+  // Load only one step page to obtain total via pagination, avoid fetching all steps (performance)
+  const { data: stepsResponse } = useSteps(1, 1); // Get minimal page to read pagination.total
   const { data: activeSessionsResponse } = useActiveSessions();
   const { data: sessionStatsResponse } = useSessionStats();
 
   // Извлекаем массивы данных из ответа API
   const devices = devicesResponse?.data || [];
   const problems = problemsResponse?.data || [];
+  // stepsResponse is a PaginatedResponse; use pagination.total instead of fetching all steps
   const steps = stepsResponse?.data || [];
+  const stepsTotal = stepsResponse?.pagination?.total || steps.length || 0;
   const activeSessions = activeSessionsResponse?.data || [];
   const sessionStats = sessionStatsResponse?.data;
 
@@ -61,8 +73,10 @@ const AdminDashboard = () => {
     switch (entity) {
       case "steps":
         return {
-          total: steps.length,
-          active: steps.filter((s: any) => s.isActive !== false).length,
+          total: stepsTotal,
+          // active count is not available from paginated endpoint without extra query;
+          // approximate with total for dashboard summary to avoid heavy queries
+          active: stepsTotal,
         };
       case "remotes":
         return { total: remotes.length, active: remotes.length };
@@ -80,10 +94,92 @@ const AdminDashboard = () => {
 
   const exportData = async (options: any) => ({ downloadUrl: "" });
 
+  // Raw DB data viewer state and loaders
+  const [rawData, setRawData] = useState<Record<string, any>>({});
+  const [loadingEntities, setLoadingEntities] = useState<
+    Record<string, boolean>
+  >({});
+
+  const loadEntity = async (entity: string) => {
+    setLoadingEntities((s) => ({ ...s, [entity]: true }));
+    try {
+      let result: any = null;
+      switch (entity) {
+        case "devices":
+          result = await devicesApi.exportDevices("json", true);
+          result = result?.data || result;
+          break;
+        case "problems":
+          result = await problemsApi.exportProblems("json", undefined, true);
+          result = result?.data || result;
+          break;
+        case "steps":
+          result = await stepsApi.getAll();
+          result = result || [];
+          break;
+        case "sessions":
+          result = await sessionsApi.exportSessions("json");
+          result = result?.data || result;
+          break;
+        case "remotes":
+          result = await remotesApi.getAll({ limit: 1000 });
+          result = result?.data || result;
+          break;
+        case "tvInterfaces":
+          // fetch all TV interfaces via API client if available
+          try {
+            const all = await tvInterfacesAPI.getAll();
+            result = all?.data || all;
+          } catch (err) {
+            result = [];
+          }
+          break;
+        case "users":
+          try {
+            const allUsers = await usersApi.getAll();
+            result = allUsers || [];
+          } catch (err) {
+            result = [];
+          }
+          break;
+        default:
+          result = [];
+      }
+
+      setRawData((s) => ({ ...s, [entity]: result }));
+    } catch (error) {
+      console.error("Failed to load entity", entity, error);
+      setRawData((s) => ({ ...s, [entity]: { error: String(error) } }));
+    } finally {
+      setLoadingEntities((s) => ({ ...s, [entity]: false }));
+    }
+  };
+
+  const loadAll = async () => {
+    const entities = [
+      "devices",
+      "problems",
+      "steps",
+      "sessions",
+      "remotes",
+      "tvInterfaces",
+      "users",
+    ];
+    for (const e of entities) {
+      // sequence to avoid overwhelming API, small delay
+      // eslint-disable-next-line no-await-in-loop
+      await loadEntity(e);
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  };
+
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("week");
 
   // Statistics - using real API data
+  const [adminStats, setAdminStats] = useState<any>(null);
+
   const deviceStats = {
     total: devices.length,
     active: devices.filter((d: any) => d.is_active).length,
@@ -102,6 +198,24 @@ const AdminDashboard = () => {
     active: sessionStats?.activeSessions || activeSessionsList.length,
     successRate: sessionStats?.successRate || 0,
   };
+
+  // Fetch lightweight admin stats (counts) to speed up dashboard
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await (await import("@/api")).adminApi.getStats();
+        if (mounted && res && res.data) {
+          setAdminStats(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load admin stats:", err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Recent activity with sample data if empty
   const recentChanges =
@@ -230,13 +344,21 @@ const AdminDashboard = () => {
             <Monitor className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{deviceStats.active}</div>
+            <div className="text-2xl font-bold">
+              {adminStats?.devices ?? deviceStats.active}
+            </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+{deviceStats.active}</span>{" "}
+              <span className="text-green-600">
+                +{adminStats?.devices ?? deviceStats.active}
+              </span>{" "}
               активных
             </p>
             <Progress
-              value={(deviceStats.active / deviceStats.total) * 100}
+              value={
+                ((adminStats?.devices ?? deviceStats.active) /
+                  (adminStats?.devices ?? Math.max(deviceStats.total, 1))) *
+                100
+              }
               className="mt-3"
             />
           </CardContent>
@@ -248,7 +370,9 @@ const AdminDashboard = () => {
             <AlertTriangle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{problemStats.total}</div>
+            <div className="text-2xl font-bold">
+              {adminStats?.problems ?? problemStats.total}
+            </div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">{publishedProblems}</span>{" "}
               опубликованы
@@ -263,14 +387,21 @@ const AdminDashboard = () => {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stepStatsData.active}</div>
+            <div className="text-2xl font-bold">
+              {adminStats?.steps ?? stepStatsData.active}
+            </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-blue-600">{stepStatsData.total}</span> всего
+              <span className="text-blue-600">
+                {adminStats?.steps ?? stepStatsData.total}
+              </span>{" "}
+              всего
             </p>
             <Progress
               value={
-                stepStatsData.total > 0
-                  ? (stepStatsData.active / stepStatsData.total) * 100
+                (adminStats?.steps ?? stepStatsData.total) > 0
+                  ? ((adminStats?.steps ?? stepStatsData.active) /
+                      (adminStats?.steps ?? stepStatsData.total)) *
+                    100
                   : 0
               }
               className="mt-3"
@@ -286,7 +417,9 @@ const AdminDashboard = () => {
             <Activity className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{sessionStatsData.active}</div>
+            <div className="text-2xl font-bold">
+              {adminStats?.sessions ?? sessionStatsData.active}
+            </div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">
                 +{Math.round(sessionStatsData.successRate)}%
@@ -308,7 +441,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary">
-              {devices.length}
+              {adminStats?.devices ?? devices.length}
             </div>
             <p className="text-sm text-muted-foreground">устройств в системе</p>
           </CardContent>
@@ -441,6 +574,95 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
+      {/* Полные данные базы */}
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Download className="h-5 w-5 mr-2" />
+              Полные данные базы
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2 mb-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("devices")}
+                >
+                  Devices
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("problems")}
+                >
+                  Problems
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("steps")}
+                >
+                  Steps
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("sessions")}
+                >
+                  Sessions
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("remotes")}
+                >
+                  Remotes
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("tvInterfaces")}
+                >
+                  TV Interfaces
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("users")}
+                >
+                  Users
+                </Button>
+                <Button size="sm" variant="ghost" onClick={loadAll}>
+                  Load all
+                </Button>
+              </div>
+
+              <div className="max-h-[40vh] overflow-auto bg-gray-50 dark:bg-gray-800 p-3 rounded">
+                {Object.keys(rawData).length === 0 ? (
+                  <div className="text-sm text-gray-500">
+                    Ничего не загружено
+                  </div>
+                ) : (
+                  Object.entries(rawData).map(([k, v]) => (
+                    <div key={k} className="mb-4">
+                      <div className="font-medium mb-1">
+                        {k} ({Array.isArray(v) ? v.length : "-"})
+                      </div>
+                      <pre className="text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
+                        {JSON.stringify(v, null, 2)}
+                      </pre>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
@@ -527,7 +749,47 @@ const AdminDashboard = () => {
               </Button>
               <Button className="w-full justify-start" variant="outline">
                 <Download className="h-4 w-4 mr-2" />
-                Экспорт резервно�� копии
+                Экспорт резервной копии
+              </Button>
+              <Button
+                className="w-full justify-start"
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    toast({
+                      message: "Запуск оптимизации базы TV Interfaces...",
+                    });
+                    const res = await (
+                      await import("@/api")
+                    ).adminApi.optimizeTVInterfaces();
+                    console.log("Optimize result:", res);
+                    if (res && res.data) {
+                      toast({ message: "Оптимизация завершена" });
+                    } else {
+                      toast({ message: "Оптимизация запущена" });
+                    }
+                    // Refresh stats after optimization
+                    setTimeout(() => {
+                      (async () => {
+                        try {
+                          const statsRes = await (
+                            await import("@/api")
+                          ).adminApi.getStats();
+                          setAdminStats(statsRes.data);
+                        } catch (e) {
+                          // ignore
+                        }
+                      })();
+                    }, 2000);
+                  } catch (error) {
+                    console.error("Optimize failed:", error);
+                    toast({ message: "Ошибка оптимизации базы" });
+                  }
+                }}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Оптимизировать TV Interfaces
               </Button>
 
               <div className="border-t pt-3 mt-4">

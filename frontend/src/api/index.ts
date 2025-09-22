@@ -22,6 +22,8 @@ import { sessionsApi } from "./sessions";
 import { remotesApi } from "./remotes";
 import { authApi } from "./auth";
 import { usersApi } from "./users";
+import tvInterfacesAPI from "./tvInterfaces";
+import adminApi from "./admin";
 // Re-export API services
 export {
   devicesApi,
@@ -31,6 +33,8 @@ export {
   remotesApi,
   authApi,
   usersApi,
+  tvInterfacesAPI,
+  adminApi,
 };
 
 // Export types for consumers
@@ -115,6 +119,7 @@ export const api = {
   steps: stepsApi,
   sessions: sessionsApi,
   remotes: remotesApi,
+  tvInterfaces: tvInterfacesAPI,
   health: checkApiHealth,
   info: getApiInfo,
   docs: getApiDocs,

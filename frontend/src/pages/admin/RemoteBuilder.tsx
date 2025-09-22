@@ -138,7 +138,7 @@ const RemoteBuilder = () => {
     );
 
     remotesApi
-      .getAll()
+      .getAll({ limit: 200 })
       .then((result) => {
         console.log(
           "✅✅✅ RemoteBuilder: remotesApi.getAll SUCCESS ✅✅✅",
@@ -876,7 +876,7 @@ const RemoteBuilder = () => {
                   <AlertDescription>
                     <div className="space-y-3">
                       <p className="text-sm font-medium">
-                        Редактир��вание: {selectedButton.label}
+                        Редакт��р��вание: {selectedButton.label}
                       </p>
                       <div>
                         <Label htmlFor="edit-button-label">Название</Label>
