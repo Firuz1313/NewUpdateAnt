@@ -67,61 +67,101 @@ class TVInterfaceOptimizer {
       // 6. Create helper indexes for related tables to speed up admin queries
       try {
         console.log("📇 Creating index for problems.device_id...");
-        await query(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_problems_device_id ON problems(device_id)`);
+        await query(
+          `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_problems_device_id ON problems(device_id)`,
+        );
         results.indexesCreated.push("idx_problems_device_id");
         console.log("✅ idx_problems_device_id created");
       } catch (err) {
-        console.log("ℹ️ idx_problems_device_id creation skipped or failed:", err.message || err);
+        console.log(
+          "ℹ️ idx_problems_device_id creation skipped or failed:",
+          err.message || err,
+        );
       }
 
       try {
-        console.log("📇 Creating composite index for problems(device_id, status)...");
-        await query(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_problems_device_status ON problems(device_id, status)`);
+        console.log(
+          "📇 Creating composite index for problems(device_id, status)...",
+        );
+        await query(
+          `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_problems_device_status ON problems(device_id, status)`,
+        );
         results.indexesCreated.push("idx_problems_device_status");
         console.log("✅ idx_problems_device_status created");
       } catch (err) {
-        console.log("ℹ️ idx_problems_device_status creation skipped or failed:", err.message || err);
+        console.log(
+          "ℹ️ idx_problems_device_status creation skipped or failed:",
+          err.message || err,
+        );
       }
 
       try {
         console.log("📇 Creating index for diagnostic_steps.problem_id...");
-        await query(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_diagnostic_steps_problem_id ON diagnostic_steps(problem_id)`);
+        await query(
+          `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_diagnostic_steps_problem_id ON diagnostic_steps(problem_id)`,
+        );
         results.indexesCreated.push("idx_diagnostic_steps_problem_id");
         console.log("✅ idx_diagnostic_steps_problem_id created");
       } catch (err) {
-        console.log("ℹ️ idx_diagnostic_steps_problem_id creation skipped or failed:", err.message || err);
+        console.log(
+          "ℹ️ idx_diagnostic_steps_problem_id creation skipped or failed:",
+          err.message || err,
+        );
       }
 
       try {
-        console.log("📇 Creating composite index for diagnostic_steps(problem_id, is_active, step_number)...");
-        await query(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_diagnostic_steps_problem_active_stepnum ON diagnostic_steps(problem_id, is_active, step_number)`);
-        results.indexesCreated.push("idx_diagnostic_steps_problem_active_stepnum");
+        console.log(
+          "📇 Creating composite index for diagnostic_steps(problem_id, is_active, step_number)...",
+        );
+        await query(
+          `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_diagnostic_steps_problem_active_stepnum ON diagnostic_steps(problem_id, is_active, step_number)`,
+        );
+        results.indexesCreated.push(
+          "idx_diagnostic_steps_problem_active_stepnum",
+        );
         console.log("✅ idx_diagnostic_steps_problem_active_stepnum created");
       } catch (err) {
-        console.log("ℹ️ idx_diagnostic_steps_problem_active_stepnum creation skipped or failed:", err.message || err);
+        console.log(
+          "ℹ️ idx_diagnostic_steps_problem_active_stepnum creation skipped or failed:",
+          err.message || err,
+        );
       }
 
       try {
         console.log("📇 Creating index for remotes.device_id...");
-        await query(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_remotes_device_id ON remotes(device_id)`);
+        await query(
+          `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_remotes_device_id ON remotes(device_id)`,
+        );
         results.indexesCreated.push("idx_remotes_device_id");
         console.log("✅ idx_remotes_device_id created");
       } catch (err) {
-        console.log("ℹ️ idx_remotes_device_id creation skipped or failed:", err.message || err);
+        console.log(
+          "ℹ️ idx_remotes_device_id creation skipped or failed:",
+          err.message || err,
+        );
       }
 
       try {
-        console.log("��� Creating composite index for remotes(device_id, is_active)...");
-        await query(`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_remotes_device_active ON remotes(device_id, is_active)`);
+        console.log(
+          "��� Creating composite index for remotes(device_id, is_active)...",
+        );
+        await query(
+          `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_remotes_device_active ON remotes(device_id, is_active)`,
+        );
         results.indexesCreated.push("idx_remotes_device_active");
         console.log("✅ idx_remotes_device_active created");
       } catch (err) {
-        console.log("ℹ️ idx_remotes_device_active creation skipped or failed:", err.message || err);
+        console.log(
+          "ℹ️ idx_remotes_device_active creation skipped or failed:",
+          err.message || err,
+        );
       }
 
       // 7. Update statistics for related tables
       try {
-        console.log("📊 Updating statistics for problems, diagnostic_steps and remotes...");
+        console.log(
+          "📊 Updating statistics for problems, diagnostic_steps and remotes...",
+        );
         await query("ANALYZE problems");
         await query("ANALYZE diagnostic_steps");
         await query("ANALYZE remotes");

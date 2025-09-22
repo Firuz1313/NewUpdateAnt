@@ -34,7 +34,10 @@ export function useRemotes(filters: RemoteFilters = {}) {
   const result = useQuery({
     queryKey: remotesKeys.list(mergedFilters),
     queryFn: () => {
-      console.log("useRemotes queryFn called, calling remotesApi.getAll with limit", mergedFilters.limit);
+      console.log(
+        "useRemotes queryFn called, calling remotesApi.getAll with limit",
+        mergedFilters.limit,
+      );
       return remotesApi.getAll(mergedFilters);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes

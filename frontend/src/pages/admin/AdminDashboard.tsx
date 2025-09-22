@@ -36,7 +36,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { devicesApi, problemsApi, stepsApi, sessionsApi, remotesApi, tvInterfacesAPI, usersApi } from "@/api";
+import {
+  devicesApi,
+  problemsApi,
+  stepsApi,
+  sessionsApi,
+  remotesApi,
+  tvInterfacesAPI,
+  usersApi,
+} from "@/api";
 
 const AdminDashboard = () => {
   const { data: devicesResponse } = useDevices();
@@ -88,7 +96,9 @@ const AdminDashboard = () => {
 
   // Raw DB data viewer state and loaders
   const [rawData, setRawData] = useState<Record<string, any>>({});
-  const [loadingEntities, setLoadingEntities] = useState<Record<string, boolean>>({});
+  const [loadingEntities, setLoadingEntities] = useState<
+    Record<string, boolean>
+  >({});
 
   const loadEntity = async (entity: string) => {
     setLoadingEntities((s) => ({ ...s, [entity]: true }));
@@ -146,7 +156,15 @@ const AdminDashboard = () => {
   };
 
   const loadAll = async () => {
-    const entities = ["devices", "problems", "steps", "sessions", "remotes", "tvInterfaces", "users"];
+    const entities = [
+      "devices",
+      "problems",
+      "steps",
+      "sessions",
+      "remotes",
+      "tvInterfaces",
+      "users",
+    ];
     for (const e of entities) {
       // sequence to avoid overwhelming API, small delay
       // eslint-disable-next-line no-await-in-loop
@@ -326,13 +344,21 @@ const AdminDashboard = () => {
             <Monitor className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminStats?.devices ?? deviceStats.active}</div>
+            <div className="text-2xl font-bold">
+              {adminStats?.devices ?? deviceStats.active}
+            </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+{adminStats?.devices ?? deviceStats.active}</span>{" "}
+              <span className="text-green-600">
+                +{adminStats?.devices ?? deviceStats.active}
+              </span>{" "}
               активных
             </p>
             <Progress
-              value={((adminStats?.devices ?? deviceStats.active) / (adminStats?.devices ?? Math.max(deviceStats.total,1))) * 100}
+              value={
+                ((adminStats?.devices ?? deviceStats.active) /
+                  (adminStats?.devices ?? Math.max(deviceStats.total, 1))) *
+                100
+              }
               className="mt-3"
             />
           </CardContent>
@@ -344,7 +370,9 @@ const AdminDashboard = () => {
             <AlertTriangle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminStats?.problems ?? problemStats.total}</div>
+            <div className="text-2xl font-bold">
+              {adminStats?.problems ?? problemStats.total}
+            </div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">{publishedProblems}</span>{" "}
               опубликованы
@@ -359,14 +387,21 @@ const AdminDashboard = () => {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminStats?.steps ?? stepStatsData.active}</div>
+            <div className="text-2xl font-bold">
+              {adminStats?.steps ?? stepStatsData.active}
+            </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-blue-600">{adminStats?.steps ?? stepStatsData.total}</span> всего
+              <span className="text-blue-600">
+                {adminStats?.steps ?? stepStatsData.total}
+              </span>{" "}
+              всего
             </p>
             <Progress
               value={
                 (adminStats?.steps ?? stepStatsData.total) > 0
-                  ? ((adminStats?.steps ?? stepStatsData.active) / (adminStats?.steps ?? stepStatsData.total)) * 100
+                  ? ((adminStats?.steps ?? stepStatsData.active) /
+                      (adminStats?.steps ?? stepStatsData.total)) *
+                    100
                   : 0
               }
               className="mt-3"
@@ -382,7 +417,9 @@ const AdminDashboard = () => {
             <Activity className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminStats?.sessions ?? sessionStatsData.active}</div>
+            <div className="text-2xl font-bold">
+              {adminStats?.sessions ?? sessionStatsData.active}
+            </div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">
                 +{Math.round(sessionStatsData.successRate)}%
@@ -549,25 +586,53 @@ const AdminDashboard = () => {
           <CardContent>
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2 mb-3">
-                <Button size="sm" variant="outline" onClick={() => loadEntity("devices")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("devices")}
+                >
                   Devices
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => loadEntity("problems")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("problems")}
+                >
                   Problems
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => loadEntity("steps")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("steps")}
+                >
                   Steps
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => loadEntity("sessions")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("sessions")}
+                >
                   Sessions
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => loadEntity("remotes")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("remotes")}
+                >
                   Remotes
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => loadEntity("tvInterfaces")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("tvInterfaces")}
+                >
                   TV Interfaces
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => loadEntity("users")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => loadEntity("users")}
+                >
                   Users
                 </Button>
                 <Button size="sm" variant="ghost" onClick={loadAll}>
@@ -577,12 +642,18 @@ const AdminDashboard = () => {
 
               <div className="max-h-[40vh] overflow-auto bg-gray-50 dark:bg-gray-800 p-3 rounded">
                 {Object.keys(rawData).length === 0 ? (
-                  <div className="text-sm text-gray-500">Ничего не загружено</div>
+                  <div className="text-sm text-gray-500">
+                    Ничего не загружено
+                  </div>
                 ) : (
                   Object.entries(rawData).map(([k, v]) => (
                     <div key={k} className="mb-4">
-                      <div className="font-medium mb-1">{k} ({Array.isArray(v) ? v.length : "-"})</div>
-                      <pre className="text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{JSON.stringify(v, null, 2)}</pre>
+                      <div className="font-medium mb-1">
+                        {k} ({Array.isArray(v) ? v.length : "-"})
+                      </div>
+                      <pre className="text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
+                        {JSON.stringify(v, null, 2)}
+                      </pre>
                     </div>
                   ))
                 )}
@@ -686,8 +757,12 @@ const AdminDashboard = () => {
                 size="sm"
                 onClick={async () => {
                   try {
-                    toast({ message: "Запуск оптимизации базы TV Interfaces..." });
-                    const res = await (await import("@/api")).adminApi.optimizeTVInterfaces();
+                    toast({
+                      message: "Запуск оптимизации базы TV Interfaces...",
+                    });
+                    const res = await (
+                      await import("@/api")
+                    ).adminApi.optimizeTVInterfaces();
                     console.log("Optimize result:", res);
                     if (res && res.data) {
                       toast({ message: "Оптимизация завершена" });
@@ -698,7 +773,9 @@ const AdminDashboard = () => {
                     setTimeout(() => {
                       (async () => {
                         try {
-                          const statsRes = await (await import("@/api")).adminApi.getStats();
+                          const statsRes = await (
+                            await import("@/api")
+                          ).adminApi.getStats();
                           setAdminStats(statsRes.data);
                         } catch (e) {
                           // ignore
