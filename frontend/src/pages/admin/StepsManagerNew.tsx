@@ -104,13 +104,15 @@ const StepsManagerNew = () => {
     try {
       setLoading(true);
 
-      // Load steps
-      const stepsResponse = await stepsApi.getAll();
-      setSteps(stepsResponse || []);
+      // Load steps (paginated, limited)
+      const stepsResponse = await stepsApi.getSteps(1, 100);
+      const stepsData = stepsResponse?.data || (stepsResponse as any) || [];
+      setSteps(stepsData);
 
-      // Load remotes
-      const remotesResponse = await remotesApi.getAll();
-      setRemotes(remotesResponse || []);
+      // Load remotes (limited)
+      const remotesResponse = await remotesApi.getAll({ limit: 200 });
+      const remotesData = remotesResponse?.data || remotesResponse || [];
+      setRemotes(remotesData);
     } catch (error) {
       console.error("Error loading initial data:", error);
     } finally {
@@ -163,7 +165,7 @@ const StepsManagerNew = () => {
     tvAreaRect: { x: 0, y: 0, width: 0, height: 0 },
   });
 
-  // Загрузка ТВ интерфейсов при изменении устройства
+  // Загрузка ТВ интерфейсов п��и изменении устройства
   useEffect(() => {
     if (formData.deviceId && formData.deviceId !== "") {
       loadTVInterfacesForDevice(formData.deviceId);
@@ -1026,7 +1028,7 @@ const StepsManagerNew = () => {
             onValueChange={(value) => handleFieldChange("problemId", value)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Выберите проблему" />
+              <SelectValue placeholder="Выберите ��роблему" />
             </SelectTrigger>
             <SelectContent>
               {getAvailableProblems().map((problem) => (
@@ -1615,7 +1617,7 @@ const StepsManagerNew = () => {
                 !formData.deviceId || !formData.problemId || !formData.title
               }
             >
-              Сохранить
+              С��хранить
             </Button>
           </div>
         </DialogContent>
