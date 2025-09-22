@@ -65,8 +65,10 @@ const AdminDashboard = () => {
     switch (entity) {
       case "steps":
         return {
-          total: steps.length,
-          active: steps.filter((s: any) => s.isActive !== false).length,
+          total: stepsTotal,
+          // active count is not available from paginated endpoint without extra query;
+          // approximate with total for dashboard summary to avoid heavy queries
+          active: stepsTotal,
         };
       case "remotes":
         return { total: remotes.length, active: remotes.length };
@@ -503,7 +505,7 @@ const AdminDashboard = () => {
 
               <div className="pt-4 border-t">
                 <div className="text-sm text-gray-600 mb-2">
-                  Использо��ание хранилища
+                  Использование хранилища
                 </div>
                 <Progress value={67} className="h-2" />
                 <div className="text-xs text-gray-500 mt-1">
@@ -746,7 +748,7 @@ const AdminDashboard = () => {
                       }
                     >
                       {problem.status === "published"
-                        ? "Опубликовано"
+                        ? "Опубликов��но"
                         : "Черновик"}
                     </Badge>
                     <DropdownMenu>
