@@ -49,7 +49,9 @@ const AdminDashboard = () => {
   // Извлекаем массивы данных из ответа API
   const devices = devicesResponse?.data || [];
   const problems = problemsResponse?.data || [];
+  // stepsResponse is a PaginatedResponse; use pagination.total instead of fetching all steps
   const steps = stepsResponse?.data || [];
+  const stepsTotal = stepsResponse?.pagination?.total || steps.length || 0;
   const activeSessions = activeSessionsResponse?.data || [];
   const sessionStats = sessionStatsResponse?.data;
 
@@ -353,7 +355,7 @@ const AdminDashboard = () => {
         <Card className="border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              А��тивные сессии
+              Активные сессии
             </CardTitle>
             <Activity className="h-4 w-4 text-purple-600" />
           </CardHeader>
@@ -501,7 +503,7 @@ const AdminDashboard = () => {
 
               <div className="pt-4 border-t">
                 <div className="text-sm text-gray-600 mb-2">
-                  Использование хранилища
+                  Использо��ание хранилища
                 </div>
                 <Progress value={67} className="h-2" />
                 <div className="text-xs text-gray-500 mt-1">
@@ -635,7 +637,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Settings className="h-5 w-5 mr-2" />
-              Б��стрые действия
+              Быстрые действия
             </CardTitle>
           </CardHeader>
           <CardContent>
