@@ -207,7 +207,7 @@ app.use(camelizeResponse);
 // Статические файлы
 app.use("/media", express.static(path.join(__dirname, "../uploads")));
 
-// Кастомный middleware для логирования запросов
+// Кастомный middleware для логирования з��просов
 app.use(requestLogger);
 
 // Дополнительное логирование для отладки
@@ -250,7 +250,7 @@ app.use(errorHandler);
 
 // Graceful shutdown
 process.on("SIGTERM", () => {
-  console.log("📄 Получен сигнал SIGTERM. Изящное завершение работы...");
+  console.log("📄 Получен сигнал SIGTERM. Изящное завершение раб��ты...");
   process.exit(0);
 });
 
@@ -323,6 +323,25 @@ async function startServer() {
       console.log(
         "🔄 Vite proxy should forward /api/* requests from port 8080 to port 3000",
       );
+    }
+
+    // Auto-run DB optimization in background (can be disabled by AUTO_OPTIMIZE=false)
+    const autoOptimize = process.env.AUTO_OPTIMIZE !== "false";
+    if (autoOptimize) {
+      // Run optimizer but don't block server start. Log results.
+      (async () => {
+        try {
+          console.log("🔁 Auto-optimization of TV interfaces starting...");
+          const { default: TVInterfaceOptimizer } = await import(
+            "./models/TVInterfaceOptimizer.js"
+          );
+          const optimizer = new TVInterfaceOptimizer();
+          const results = await optimizer.optimizeDatabase();
+          console.log("🔧 Auto-optimization completed:", results);
+        } catch (err) {
+          console.error("❌ Auto-optimization failed:", err?.message || err);
+        }
+      })();
     }
   });
 }
