@@ -382,7 +382,7 @@ const AdminDashboard = () => {
             <Activity className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{sessionStatsData.active}</div>
+            <div className="text-2xl font-bold">{adminStats?.sessions ?? sessionStatsData.active}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">
                 +{Math.round(sessionStatsData.successRate)}%
