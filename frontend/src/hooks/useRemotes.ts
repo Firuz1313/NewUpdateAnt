@@ -26,14 +26,16 @@ export const remotesKeys = {
  * Hook for fetching all remotes with filters
  */
 export function useRemotes(filters: RemoteFilters = {}) {
-  console.log("🔥🔥🔥 useRemotes: HOOK EXECUTED! Filters:", filters);
+  // By default, limit results to avoid fetching entire dataset and slow UI
+  const mergedFilters = { limit: filters.limit ?? 100, ...filters };
+  console.log("🔥🔥🔥 useRemotes: HOOK EXECUTED! Filters:", mergedFilters);
   console.log("🔥🔥🔥 useRemotes: remotesApi object:", remotesApi);
 
   const result = useQuery({
-    queryKey: remotesKeys.list(filters),
+    queryKey: remotesKeys.list(mergedFilters),
     queryFn: () => {
-      console.log("useRemotes queryFn called, calling remotesApi.getAll");
-      return remotesApi.getAll(filters);
+      console.log("useRemotes queryFn called, calling remotesApi.getAll with limit", mergedFilters.limit);
+      return remotesApi.getAll(mergedFilters);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
