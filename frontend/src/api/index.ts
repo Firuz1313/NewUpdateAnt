@@ -117,6 +117,7 @@ export const api = {
   steps: stepsApi,
   sessions: sessionsApi,
   remotes: remotesApi,
+  tvInterfaces: tvInterfacesAPI,
   health: checkApiHealth,
   info: getApiInfo,
   docs: getApiDocs,
