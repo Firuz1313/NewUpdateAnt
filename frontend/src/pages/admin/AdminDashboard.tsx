@@ -36,6 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { devicesApi, problemsApi, stepsApi, sessionsApi, remotesApi, tvInterfacesAPI, usersApi } from "@/api";
 
 const AdminDashboard = () => {
   const { data: devicesResponse } = useDevices();
@@ -79,6 +80,76 @@ const AdminDashboard = () => {
   };
 
   const exportData = async (options: any) => ({ downloadUrl: "" });
+
+  // Raw DB data viewer state and loaders
+  const [rawData, setRawData] = useState<Record<string, any>>({});
+  const [loadingEntities, setLoadingEntities] = useState<Record<string, boolean>>({});
+
+  const loadEntity = async (entity: string) => {
+    setLoadingEntities((s) => ({ ...s, [entity]: true }));
+    try {
+      let result: any = null;
+      switch (entity) {
+        case "devices":
+          result = await devicesApi.exportDevices("json", true);
+          result = result?.data || result;
+          break;
+        case "problems":
+          result = await problemsApi.exportProblems("json", undefined, true);
+          result = result?.data || result;
+          break;
+        case "steps":
+          result = await stepsApi.getAll();
+          result = result || [];
+          break;
+        case "sessions":
+          result = await sessionsApi.exportSessions("json");
+          result = result?.data || result;
+          break;
+        case "remotes":
+          result = await remotesApi.getAll({ limit: 1000 });
+          result = result?.data || result;
+          break;
+        case "tvInterfaces":
+          // fetch all TV interfaces via API client if available
+          try {
+            const all = await tvInterfacesAPI.getAll();
+            result = all?.data || all;
+          } catch (err) {
+            result = [];
+          }
+          break;
+        case "users":
+          try {
+            const allUsers = await usersApi.getAll();
+            result = allUsers || [];
+          } catch (err) {
+            result = [];
+          }
+          break;
+        default:
+          result = [];
+      }
+
+      setRawData((s) => ({ ...s, [entity]: result }));
+    } catch (error) {
+      console.error("Failed to load entity", entity, error);
+      setRawData((s) => ({ ...s, [entity]: { error: String(error) } }));
+    } finally {
+      setLoadingEntities((s) => ({ ...s, [entity]: false }));
+    }
+  };
+
+  const loadAll = async () => {
+    const entities = ["devices", "problems", "steps", "sessions", "remotes", "tvInterfaces", "users"];
+    for (const e of entities) {
+      // sequence to avoid overwhelming API, small delay
+      // eslint-disable-next-line no-await-in-loop
+      await loadEntity(e);
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  };
 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("week");
@@ -435,6 +506,61 @@ const AdminDashboard = () => {
                 <div className="text-xs text-gray-500 mt-1">
                   6.7 GB из 10 GB
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Полные данные базы */}
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Download className="h-5 w-5 mr-2" />
+              Полные данные базы
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2 mb-3">
+                <Button size="sm" variant="outline" onClick={() => loadEntity("devices")}>
+                  Devices
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => loadEntity("problems")}>
+                  Problems
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => loadEntity("steps")}>
+                  Steps
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => loadEntity("sessions")}>
+                  Sessions
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => loadEntity("remotes")}>
+                  Remotes
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => loadEntity("tvInterfaces")}>
+                  TV Interfaces
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => loadEntity("users")}>
+                  Users
+                </Button>
+                <Button size="sm" variant="ghost" onClick={loadAll}>
+                  Load all
+                </Button>
+              </div>
+
+              <div className="max-h-[40vh] overflow-auto bg-gray-50 dark:bg-gray-800 p-3 rounded">
+                {Object.keys(rawData).length === 0 ? (
+                  <div className="text-sm text-gray-500">Ничего не загружено</div>
+                ) : (
+                  Object.entries(rawData).map(([k, v]) => (
+                    <div key={k} className="mb-4">
+                      <div className="font-medium mb-1">{k} ({Array.isArray(v) ? v.length : "-"})</div>
+                      <pre className="text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{JSON.stringify(v, null, 2)}</pre>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </CardContent>
