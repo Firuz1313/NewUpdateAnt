@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,9 @@ export default function AdminLogin() {
             {error && <div className="text-red-600 text-sm">{error}</div>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Входим..." : "Войти"}
+            </Button>
+            <Button asChild variant="ghost" className="w-full mt-2">
+              <Link to="/">На главную</Link>
             </Button>
           </form>
         </CardContent>
